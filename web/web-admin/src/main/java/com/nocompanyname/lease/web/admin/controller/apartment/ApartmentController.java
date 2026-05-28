@@ -61,7 +61,7 @@ public class ApartmentController {
     @GetMapping("getDetailById")
     public Result<ApartmentDetailVo> getDetailById(@RequestParam Long id) {
         ApartmentDetailVo apartmentDetailVo = apartmentInfoService.getDetailById(id);
-        return Result.ok();
+        return Result.ok(apartmentDetailVo);
     }
 
     @Operation(summary = "根据id删除公寓信息")

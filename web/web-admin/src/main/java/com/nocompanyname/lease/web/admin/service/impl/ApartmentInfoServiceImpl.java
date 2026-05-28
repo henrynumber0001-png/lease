@@ -236,6 +236,20 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
         ApartmentInfo apartmentInfo = apartmentInfoMapper.selectById(id); //WHERE id = #{id}，返回apartment_info这张表的全部字段信息。这就是ApartmentInfoMapper的作用
 
         ApartmentDetailVo apartmentDetailVo = new ApartmentDetailVo(); //Vo类没有Service，也就没办法@Autowired一个它的实现类对象。但是我们可以使用 new对象的方式，创建一个对象，反正也只有这个方法内需要用到它。
+        BeanUtils.copyProperties(apartmentInfo, apartmentDetailVo); //把 apartment_info 主表的字段（id/name/introduction/address...）拷贝到 ApartmentDetailVo 继承自父类的属性上，否则前端拿不到主表信息
+        /*
+        ⚠️注意：
+        BeanUtils.copyProperties(source, target)的作用，是把 source 对象里【已经存在的实例数据】，赋值给 target 对象里已经存在的同名字段。
+        是把 A类中 相同类型+相同名称的 成员变量上的实际参数值，copy给 B类中对应的 相同类型+相同名称的 成员变量上。
+        而不是copy 成员变量（类型+名称） 过去。这一步，通过继承，已经实现了。
+        或者你要自己提前预定义好两个拥有相同类型+名称的成员变量在分别的类中。
+
+        记住，BeanUtils.copyProperties(source, target) 做的事情是copy值，而非成员变量。
+
+        底层逻辑：通过 getter / setter 反射匹配，字段名相同 + 类型兼容 才会被复制。
+         */
+
+
         //查询图片列表 GraphVoList
         LambdaQueryWrapper<GraphInfo> graphInfoQueryWrapper = new LambdaQueryWrapper<>();
         graphInfoQueryWrapper.eq(GraphInfo::getItemId, id).eq(GraphInfo::getItemType, ItemType.APARTMENT);
