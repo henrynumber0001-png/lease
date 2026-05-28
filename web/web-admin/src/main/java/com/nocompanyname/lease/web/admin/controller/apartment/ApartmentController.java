@@ -67,12 +67,14 @@ public class ApartmentController {
     @Operation(summary = "根据id删除公寓信息")
     @DeleteMapping("removeById")
     public Result removeById(@RequestParam Long id) {
+        apartmentInfoService.removeByApartmentId(id);
         return Result.ok();
     }
 
     @Operation(summary = "根据id修改公寓发布状态")
     @PostMapping("updateReleaseStatusById")
     public Result updateReleaseStatusById(@RequestParam Long id, @RequestParam ReleaseStatus status) {
+
         return Result.ok();
     }
 

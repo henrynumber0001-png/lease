@@ -12,7 +12,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(LeaseException.class) // 根据 throw 出来的 异常类型 判断使用哪一个异常方法处理
     public Result<Void> handleLeaseException(LeaseException e) { //e不是参数名，而是这个异常类的对象本身
-        log.error("业务异常：{}", e.getMessage(), e); //记录异常日志，方便后端排查问题
+        log.error("业务异常：{}", e.getMessage(), e);
+        //记录异常日志，方便后端排查问题。
+        // 这个getMessage() 是 LeaseException类的成员变量message，不是 LeaseException的构造方法的参数 resultCodeEnum的成员变量
+
         return Result.build(null, e.getResultCodeEnum());
         //将异常信息封装成统一的返回结果，返给客户端
         //getResultCodeEnum()是 LeaseException 的 get方法，因为写了@getter + 成员变量resultCodeEnum，所以可以获得这个成员变量的值（异常的传入信息）

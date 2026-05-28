@@ -3,6 +3,8 @@ package com.nocompanyname.lease.web.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nocompanyname.lease.common.exception.LeaseException;
+import com.nocompanyname.lease.common.result.ResultCodeEnum;
 import com.nocompanyname.lease.model.entity.*;
 import com.nocompanyname.lease.model.enums.ItemType;
 import com.nocompanyname.lease.web.admin.mapper.ApartmentInfoMapper;
@@ -19,6 +21,7 @@ import kotlin.jvm.internal.Lambda;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +67,9 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
     @Autowired
     private FeeKeyService feeKeyService;
 
+    @Autowired
+    private RoomInfoService roomInfoService;
+
 
     @Override
     public void saveOrUpdateByApartment(ApartmentSubmitVo apartmentSubmitVo) {
@@ -83,9 +89,16 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
          */
 
         Long apartmentId = apartmentSubmitVo.getId();
+        /*
+        首先，ApartmentSubmitVo 中的 id属性 继承自 ApartmentInfo，
+        实际上，也是通过设计这个Vo类，继承所有ApartmentInfo的属性，然后再拼接其他想要属性，合并成一张表。
+
+        其次，前面已经通过saveOrUpdate()方法，将apartment_info表的字段保存到ApartmentInfo的实体类对象中了。
+        所以，现在apartmentSubmitVo 中的id 和 apartmentInfo 中的Id 是同一个值了。
+         */
 
         if (isUpdate) { //说明是更新，不是新增
-            LambdaQueryWrapper<ApartmentFacility> apartmentFacilityLambdaQueryWrapper = new LambdaQueryWrapper<ApartmentFacility>();
+            LambdaQueryWrapper<ApartmentFacility> apartmentFacilityLambdaQueryWrapper = new LambdaQueryWrapper<>();
             apartmentFacilityLambdaQueryWrapper.eq(ApartmentFacility::getApartmentId, apartmentId); //当apartment_facility表中的apartment_id字段的值 = apartment_info.id
             apartmentFacilityService.remove(apartmentFacilityLambdaQueryWrapper);//就删除apartment_facility这张表中满足条件的所有行数据
             /*
@@ -96,7 +109,7 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
 
             LambdaQueryWrapper<ApartmentLabel> apartmentLabelQueryWrapper = new LambdaQueryWrapper<ApartmentLabel>();
             apartmentLabelQueryWrapper.eq(ApartmentLabel::getApartmentId, apartmentId);
-            apartmentLabelService.remove(apartmentLabelQueryWrapper);
+            apartmentLabelService.remove(apartmentLabelQueryWrapper); //remove 既可以删除单行，也可以删除多行。它的含义是删除满足条件的所有行。
 
             LambdaQueryWrapper<ApartmentFeeValue> apartmentFeeValueLambdaQueryWrapper = new LambdaQueryWrapper<>();
             apartmentFeeValueLambdaQueryWrapper.eq(ApartmentFeeValue::getApartmentId, apartmentId);
@@ -350,6 +363,48 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
         如果都写在XML里，会产生结果行膨胀。
          */
     }
+
+
+    public void removeByApartmentId(Long id) {
+
+        if (id == null) {
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
+        }
+
+        LambdaQueryWrapper<RoomInfo> roomInfoQueryWrapper = new LambdaQueryWrapper<>();
+        roomInfoQueryWrapper.eq(RoomInfo::getApartmentId, id);
+        long count = roomInfoService.count(roomInfoQueryWrapper);//对应SQL的 SELECT COUNT(*)
+
+        if(count > 0){
+            throw new LeaseException(ResultCodeEnum.DELETE_ERROR);//如果还有未删除的房间，那么这个公寓信息就不能删除（证明还有人住）
+        }
+
+        //先删除 公寓信息，直接通过传入的公寓id删除即可。无需调用Mapper层了，直接在Service层的实现类中实现了。
+        this.removeById(id);
+
+        //接着删除与公寓信息绑定的 关联表
+        //因为这些关联表，在存入数据的时候，存的也是公寓DI+标签ID等等，所以删除的话，也是删除这些数据。
+        LambdaQueryWrapper<GraphInfo> graphInfoQueryWrapper = new LambdaQueryWrapper<>();
+        graphInfoQueryWrapper
+                .eq(GraphInfo::getItemId, id)
+                .eq(GraphInfo::getItemType, ItemType.APARTMENT);
+        graphInfoService.remove(graphInfoQueryWrapper);
+
+        LambdaQueryWrapper<ApartmentFacility> apartmentFacilityQueryWrapper = new LambdaQueryWrapper<>();
+        apartmentFacilityQueryWrapper.eq(ApartmentFacility::getApartmentId, id);
+        apartmentFacilityService.remove(apartmentFacilityQueryWrapper);
+
+        LambdaQueryWrapper<ApartmentLabel> apartmentLabelQueryWrapper = new LambdaQueryWrapper<>();
+        apartmentLabelQueryWrapper.eq(ApartmentLabel::getApartmentId, id);
+        apartmentLabelService.remove(apartmentLabelQueryWrapper);
+
+        LambdaQueryWrapper<ApartmentFeeValue> apartmentFeeValueQueryWrapper = new LambdaQueryWrapper<>();
+        apartmentFeeValueQueryWrapper.eq(ApartmentFeeValue::getApartmentId, id);
+        apartmentFeeValueService.remove(apartmentFeeValueQueryWrapper);
+
+    }
+
+
 }
 
 
