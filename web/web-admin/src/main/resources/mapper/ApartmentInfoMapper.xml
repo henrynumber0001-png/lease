@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nocompanyname.lease.web.admin.mapper.ApartmentInfoMapper">
+
+
+    <select id="getPageItem" resultType="com.nocompanyname.lease.web.admin.vo.apartment.ApartmentItemVo">
+
+        select api.id,
+               api.name,
+               api.introduction,
+               api.district_id,
+               api.district_name,
+               api.city_id,
+               api.city_name,
+               api.province_id,
+               api.province_name,
+               api.address_detail,
+               api.latitude,
+               api.longitude,
+               api.phone,
+               api.is_release,
+               IFNULL(toc.cnt,0)            total_room_count,
+               IFNULL(toc.cnt,0) - IFNULL(nota.cnt,0) free_room_count
+        <!-- 其实这些查询字段，都是在下面子结果集中已经被查出来的了，只不过因为要将api和toc,nota这三个子结果集拼接起来，然后返回一个完整的查询结果集，所以才会再select一遍 -->
+        from (select id,
+                     name,
+                     introduction,
+                     district_id,
+                     district_name,
+                     city_id,
+                     city_name,
+                     province_id,
+                     province_name,
+                     address_detail,
+                     latitude,
+                     longitude,
+                     phone,
+                     is_release
+              from apartment_info
+                <where>
+                is_deleted = 0 <!--这个条件就不用if判断了，是必须要加的 -->
+                <if test="queryVo.provinceId != null"> <!--确认provinceId的来源，所以要用类的对象调用属性，而不能只写属性，这样不能确定唯一来源 -->
+                    AND province_id = #{queryVo.provinceId}
+                </if>
+                <if test="queryVo.cityId != null"> <!--queryVo 是 Mapper方法传进来的参数（Java对象），因此没传进来的查询条件不能调用成员变量 -->
+                    AND city_id = #{queryVo.cityId}
+                </if>
+                <if test="queryVo.districtId != null">
+                    AND district_id = #{queryVo.districtId}
+                </if>
+                </where>
+              ) api
+                       LEFT JOIN
+                   (select apartment_id,
+                           COUNT(*) cnt <!-- COUNT(*) 是一个计算出来的结果列,既然是列，就要有列名，那么自然就可以取别名了 -->
+                    FROM room_info
+                    WHERE is_deleted = 0
+                      AND is_release = 1
+                    GROUP BY apartment_id) toc ON api.id = toc.apartment_id
+                       LEFT JOIN
+                   (select apartment_id,
+                           COUNT(*) cnt <!--GROUP BY 会把“大表”拆成多个小组，然后 COUNT(*) 是在每个小组内部数行数。所以这里的cnt不是根据apartment_id查询出来的所有房间的总行数，而是by apartment_id分组后，每个apartment 内部的行数（房间数量） -->
+                    FROM lease_agreement
+                    WHERE is_deleted = 0
+                      AND status IN (2, 5) <!-- status NOT IN (2, 5) 统计的是 “租约状态不是 2 和 5 的租约数量”，不一定等于“空闲房间数”，因为空闲房间不一定有租约记录 -->
+                    GROUP BY apartment_id) nota ON api.id = nota.apartment_id
+    </select>
+
+</mapper>
+<!--
+这个地方一定是理解逻辑，而非死记硬背
+首先是根据GROUP BY apartment_id 去统计所有的行的数量
+其次是 room_info 和 lease_agreement都要执行这个逻辑，因为你要用二者相减去算出 空闲房间的数量
+
+另外， status IN (2,5)就算没学过语法，也应该知道这肯定是个查询条件，怎么能写在select下面呢？
+ -->
+
+<!--
+api  = apartment_info 表筛选后的公寓数据
+toc  = room_info 表按 apartment_id 分组统计后的房间总数
+nota = lease_agreement 表按 apartment_id 分组统计后的非空闲房间数
+
+他们都是子查询结果，是原始表经过 WHERE / GROUP BY / COUNT 等处理后的 ⚠️临时结果集
+-->
+
+<!--
+JOIN 不是只能“表1 -> 表2 -> 表3”链式向后拼。
+JOIN 的本质是：把一个新的表/结果集，拼到当前已经形成的结果集上。
+
+所以：
+A
+LEFT JOIN B ON A.id = B.a_id
+LEFT JOIN C ON A.id = C.a_id
+
+含义是：
+先以 A 为主表
+把 B 拼到 A 上
+再把 C 拼到“已经包含 A+B 的结果集”上
+而 C 的关联条件仍然可以使用 A 的字段
+
+第一步：
+api
+LEFT JOIN toc ON api.id = toc.apartment_id
+得到一个临时结果：
+api + toc
+
+第二步：
+LEFT JOIN nota ON api.id = nota.apartment_id
+这一步不是“只允许 toc 和 nota 拼”。
+而是：
+把 nota 拼到当前结果集 api + toc 上
+当前结果集里仍然有：
+api.id
+api.name
+toc.cnt
+
+所以当然可以继续用：
+api.id = nota.apartment_id
+
+所以 JOIN 的真实执行逻辑更像：
+当前结果集 = api
+当前结果集 = 当前结果集 LEFT JOIN toc ON api.id = toc.apartment_id
+当前结果集 = 当前结果集 LEFT JOIN nota ON api.id = nota.apartment_id
+
+而不是必须：
+api JOIN toc
+toc JOIN nota
+
+为什么这里不适合 toc JOIN nota？
+因为 toc 和 nota 都只是统计结果，是apartment_info表的外挂字段，而不是真正的数据库表：
+toc: 每个公寓的总房间数
+nota: 每个公寓的非空闲数
+它们都服务于同一个主对象：
+公寓 api
+
+所以它们都应该挂回：
+api.id
+
+这是一张主表旁边挂两个统计字段：
+公寓
+  ├── 房间总数 toc
+  └── 非空闲数 nota
+
+一句话总结：
+JOIN 是把新表拼到“当前结果集”上；
+后面的 JOIN 条件可以引用前面任何已经出现过的表；
+这里 api 是主对象，所以 toc 和 nota 都应该围绕 api.id 拼接。
+-->

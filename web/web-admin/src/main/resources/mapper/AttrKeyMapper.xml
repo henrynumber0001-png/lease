@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nocompanyname.lease.web.admin.mapper.AttrKeyMapper">
+
+    <select id="listAttrInfo" resultMap="attrKeyVoMap">
+        SELECT
+            k.id,
+            k.name,
+            v.id AS value_id,
+            v.name AS value_name,
+            v.attr_key_id
+        FROM
+            attr_key k
+        LEFT JOIN <!-- LEFT JOIN的意思 就是 无论如何 左表的信息都会完全的展示出来，而右表需要满足条件才能拼接到一起，并展示出来 -->
+            attr_value v ON k.id = v.attr_key_id AND v.is_deleted = 0
+            <!--
+            ON 和 WHERE 的作用完全不同：
+            1）ON：用于指定连接条件，只有当满足 ON 的条件时，两张表才会执行拼接操作，并将满足条件的行展示出来
+            所以，k.id = v.attr_key_id AND v.is_deleted = 0的意思就是，两张表不仅要在主键&外键上满足连接条件，
+            还要在 v.is_deleted 这个字段的值 等于0 时，才会将两张表拼接在一起，并展示出来。
+            而对于只新增attr_key的字段值来说，attr_value是肯定没有值的，is_deleted = null，所以右表就不可能拼接进来。
+            但这并不影响左表信息的展示。
+
+            2）WHERE：对已经生成出来的结果集，再做过滤（所以一定要有一个结果出来）
+
+            总结：
+            ON 是 前置筛选条件，WHERE 是 后置筛选条件
+             -->
+        WHERE
+            k.is_deleted = 0 <!-- 只包含左表的 逻辑删除 -->
+    </select>
+
+    <resultMap id="attrKeyVoMap" type="attrKeyVo">
+        <!-- resultMap标签中的 id 没有具体对应的字段或者属性，仅仅是起到标识作用，便于在select标签中 引用resultMap -->
+        <!-- type表示：这个 resultMap 最终要封装成什么 Java 类型的对象（它肯定是一个List，因为要返回多行数据，所以这里的Java对象指的是 泛型类型）
+             也就是Mapper接口中 List<AttrKeyVo> listAttrInfo(); 的泛型类型 AttrKeyVo -->
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <collection property="attrValueList" ofType="attrValue">
+            <id column="value_id" property="id"/>
+            <result column="value_name" property="name"/>
+            <result column="attr_key_id" property="attrKeyId"/>
+        </collection>
+    </resultMap>
+</mapper>
