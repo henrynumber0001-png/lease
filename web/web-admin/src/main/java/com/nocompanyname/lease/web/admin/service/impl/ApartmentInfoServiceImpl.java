@@ -1,12 +1,14 @@
 package com.nocompanyname.lease.web.admin.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nocompanyname.lease.common.exception.LeaseException;
 import com.nocompanyname.lease.common.result.ResultCodeEnum;
 import com.nocompanyname.lease.model.entity.*;
 import com.nocompanyname.lease.model.enums.ItemType;
+import com.nocompanyname.lease.model.enums.ReleaseStatus;
 import com.nocompanyname.lease.web.admin.mapper.ApartmentInfoMapper;
 import com.nocompanyname.lease.web.admin.mapper.LabelInfoMapper;
 import com.nocompanyname.lease.web.admin.service.*;
@@ -401,6 +403,24 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
         LambdaQueryWrapper<ApartmentFeeValue> apartmentFeeValueQueryWrapper = new LambdaQueryWrapper<>();
         apartmentFeeValueQueryWrapper.eq(ApartmentFeeValue::getApartmentId, id);
         apartmentFeeValueService.remove(apartmentFeeValueQueryWrapper);
+
+    }
+
+    @Override
+    public void updateReleaseStatusById(Long id, ReleaseStatus status) {
+        LambdaUpdateWrapper<ApartmentInfo> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(ApartmentInfo::getId, id).set(ApartmentInfo::getIsRelease, status);
+        this.update(updateWrapper);
+        //记住，QueryWrapper和UpdateWrapper都是条件构造器，是专门针对 WHERE 条件的，都还缺临门一脚，也就是具体是update、select、remove，都还需要你自己执行一下。
+        //另外，Wrapper没有 对应的 插入/新增 方法，因为插入不需要（也没有）WHERE条件。
+
+    }
+
+    @Override
+    public List<ApartmentInfo> listInfoByDistrictId(Long id) {
+        LambdaQueryWrapper<ApartmentInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ApartmentInfo::getDistrictId, id);
+        return this.list(queryWrapper);
 
     }
 

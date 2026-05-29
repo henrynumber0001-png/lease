@@ -3,10 +3,13 @@ package com.nocompanyname.lease.web.admin.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nocompanyname.lease.model.entity.ApartmentInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nocompanyname.lease.model.enums.ReleaseStatus;
 import com.nocompanyname.lease.web.admin.vo.apartment.ApartmentDetailVo;
 import com.nocompanyname.lease.web.admin.vo.apartment.ApartmentItemVo;
 import com.nocompanyname.lease.web.admin.vo.apartment.ApartmentQueryVo;
 import com.nocompanyname.lease.web.admin.vo.apartment.ApartmentSubmitVo;
+
+import java.util.List;
 
 /**
 * @author liubo
@@ -25,5 +28,9 @@ public interface ApartmentInfoService extends IService<ApartmentInfo> {
     ApartmentDetailVo getDetailById(Long id);
 
     void removeByApartmentId(Long id);
+
+    void updateReleaseStatusById(Long id, ReleaseStatus status);
+
+    List<ApartmentInfo> listInfoByDistrictId(Long id);
 }
 

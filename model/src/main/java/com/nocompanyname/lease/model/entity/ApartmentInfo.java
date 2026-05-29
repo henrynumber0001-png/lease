@@ -21,11 +21,11 @@ public class ApartmentInfo extends BaseEntity {
     @TableField(value = "introduction")
     private String introduction;
 
-    @Schema(description = "所处区域id")
+    @Schema(description = "所处行政区id")
     @TableField(value = "district_id")
     private Long districtId;
 
-    @Schema(description = "所处区域名称")
+    @Schema(description = "所处行政区名称")
     @TableField(value = "district_name")
     private String districtName;
 
