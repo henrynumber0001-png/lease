@@ -247,8 +247,15 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
 
     @Override
     public ApartmentDetailVo getDetailById(Long id) {
-        //永远不要忘了：ApartmentDetailVo 继承自 ApartmentInfo，所以 ApartmentDetailVo 还有一个 id 属性；
-        ApartmentInfo apartmentInfo = apartmentInfoMapper.selectById(id); //WHERE id = #{id}，返回apartment_info这张表的全部字段信息。这就是ApartmentInfoMapper的作用
+
+        if (id == null) {
+            return null;
+        }
+        ApartmentInfo apartmentInfo = this.getById(id); //WHERE id = #{id}，返回apartment_info这张表的全部字段信息。这就是ApartmentInfoMapper的作用
+
+        if (apartmentInfo == null) {
+            return null; //没查到任何apartment_info数据
+        }
 
         ApartmentDetailVo apartmentDetailVo = new ApartmentDetailVo(); //Vo类没有Service，也就没办法@Autowired一个它的实现类对象。但是我们可以使用 new对象的方式，创建一个对象，反正也只有这个方法内需要用到它。
         BeanUtils.copyProperties(apartmentInfo, apartmentDetailVo); //把 apartment_info 主表的字段（id/name/introduction/address...）拷贝到 ApartmentDetailVo 继承自父类的属性上，否则前端拿不到主表信息
@@ -276,10 +283,8 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
             graphVo.setUrl(graphInfo.getUrl());
             graphVoList.add(graphVo);
         });
+        apartmentDetailVo.setGraphVoList(graphVoList);
 
-        if (!graphVoList.isEmpty()) {
-            apartmentDetailVo.setGraphVoList(graphVoList);
-        }
 
 
         //查询标签列表 labelInfoList
@@ -299,9 +304,9 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
         从 Stream<ApartmentLabel> 到 Stream<Long> 类型
          */
 
+        List<LabelInfo> labelInfoList = new ArrayList<>();
         if (!labelIds.isEmpty()) {
-            apartmentDetailVo.setLabelInfoList(labelInfoService.listByIds(labelIds));
-
+            labelInfoList = labelInfoService.listByIds(labelIds);
             /*
             效果等同于：
             LambdaQueryWrapper<LabelInfo> queryWrapper = new LambdaQueryWrapper<>();
@@ -316,6 +321,7 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
             只不过如果要查主键ids，MyBatis-Plus IService 为我们内置了官方写好的方法 listByIds，一键完成
              */
         }
+        apartmentDetailVo.setLabelInfoList(labelInfoList);
 
         //查询配套列表 facilityInfoList
         LambdaQueryWrapper<ApartmentFacility> apartmentFacilityQueryWrapper = new LambdaQueryWrapper<>();
@@ -325,9 +331,11 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
                 .map(ApartmentFacility::getFacilityId)
                 .collect(Collectors.toList());
 
+        List<FacilityInfo> facilityInfoList = new ArrayList<>();
         if (!facilityIds.isEmpty()) {
-            apartmentDetailVo.setFacilityInfoList(facilityInfoService.listByIds(facilityIds));
+            facilityInfoList = facilityInfoService.listByIds(facilityIds);
         }
+        apartmentDetailVo.setFacilityInfoList(facilityInfoList);
 
         //查询杂费列表 feeValueVoList
         LambdaQueryWrapper<ApartmentFeeValue> apartmentFeeValueQueryWrapper = new LambdaQueryWrapper<>();
@@ -337,20 +345,24 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
                 .map(ApartmentFeeValue::getFeeValueId)
                 .collect((Collectors.toList()));
 
+        List<FeeValueVo> feeValueVoList = new ArrayList<>();
         if (!feeValueIds.isEmpty()) {
             List<FeeValue> feeValues = feeValueService.listByIds(feeValueIds);
             List<Long> feeKeyIds = feeValues.stream().map(FeeValue::getFeeKeyId).collect(Collectors.toList());
             Map<Long, String> feeKeyMap = feeKeyService.listByIds(feeKeyIds).stream().collect(Collectors.toMap(FeeKey::getId, FeeKey::getName));
 
-            List<FeeValueVo> feeValueVoList = new ArrayList<>();
             feeValues.forEach(feeValue -> {
                 FeeValueVo feeValueVo = new FeeValueVo();
                 BeanUtils.copyProperties(feeValue, feeValueVo);
-                feeValueVo.setFeeKeyName(feeKeyMap.get(feeValue.getFeeKeyId())); //这里用feeValue的feeKeyId，而没使用feeKeyMap自己的key，是因为这是在feeValues的for循环里，你没办法用Map集合的遍历
+                feeValueVo.setFeeKeyName(feeKeyMap.get(feeValue.getFeeKeyId()));
+                //⚠️最重要：Map集合获取value的方法：map.get(key) --通过键获取值！！！
+                //这里用feeValue的 feeKeyId，而没使用feeKeyMap自己的key，是因为这是在feeValues的for循环里，你没办法用Map集合的遍历
+                //不要用对象直接调用 feeKeyId 属性，因为@Data注解下，属性都是private的，要用get方法
+
                 feeValueVoList.add(feeValueVo);
             });
-            apartmentDetailVo.setFeeValueVoList(feeValueVoList);
         }
+        apartmentDetailVo.setFeeValueVoList(feeValueVoList);
         return apartmentDetailVo;
 
         /*

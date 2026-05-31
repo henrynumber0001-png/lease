@@ -4,4 +4,104 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nocompanyname.lease.web.admin.mapper.RoomInfoMapper">
 
+
+    <select id="getBypageItem" resultMap="RoomItemVoMap">
+        SELECT ri.id AS ri_id,
+               ri.room_number,
+               ri.rent AS ri_rent,
+               ri.apartment_id AS ri_apartment_id,
+               ri.is_release AS ri_is_release,
+               la.lease_end_date,
+               la.id IS NOT NULL AS is_check_in,
+               ai.id AS ai_id,
+               ai.name AS ai_name,
+               ai.introduction,
+               ai.district_id,
+               ai.district_name,
+               ai.city_id,
+               ai.city_name,
+               ai.province_id,
+               ai.province_name,
+               ai.address_detail,
+               ai.latitude,
+               ai.longitude,
+               ai.phone AS ai_phone,
+               ai.is_release AS ai_is_release
+        FROM room_info ri
+                 LEFT JOIN lease_agreement la
+                           ON ri.id = la.room_id AND la.is_deleted = 0 AND status IN (2,5)
+                 LEFT JOIN apartment_info AS ai
+                           ON ri.apartment_id = ai.id AND ai.is_deleted = 0
+        <where>
+            ri.is_deleted = 0
+            <if test="queryVo.provinceId != null">
+                AND ai.province_id = #{queryVo.provinceId}
+            </if>
+            <if test = "queryVo.cityId != null">
+                AND ai.city_id = #{queryVo.cityId}
+            </if>
+            <if test = "queryVo.districtId != null">
+                AND ai.district_id = #{queryVo.districtId}
+            </if>
+            <if test = "queryVo.apartmentId != null">
+                AND ri.apartment_id = #{queryVo.apartmentId}
+            </if>
+        </where>
+
+
+    </select>
+
+    <resultMap id="RoomItemVoMap" type="com.nocompanyname.lease.web.admin.vo.room.RoomItemVo">
+        <id property="id" column="ri_id"/>
+        <result property="roomNumber" column="room_number"/>
+        <result property="rent" column="ri_rent"/>
+        <result property="apartmentId" column="ri_apartment_id"/>
+        <result property="isRelease" column="ri_is_release"/>
+        <result property="leaseEndDate" column="lease_end_date"/>
+        <result property="isCheckIn" column="is_check_in"/>
+        <association property="apartmentInfo" javaType="ApartmentInfo">
+            <id property = "id" column="ai_id"/>
+            <result property="name" column="ai_name"/>
+            <result property="introduction" column="introduction"/>
+            <result property="districtId" column="district_id"/>
+            <result property="cityId" column="city_id"/>
+            <result property="provinceId" column="province_id"/>
+            <result property="districtName" column="district_name"/>
+            <result property="cityName" column="city_name"/>
+            <result property="provinceName" column="province_name"/>
+            <result property="latitude" column="latitude"/>
+            <result property="longitude" column="longitude"/>
+            <result property="isRelease" column="ai_is_release"/>
+            <result property="phone" column="ai_phone"/>
+            <result property="addressDetail" column="address_detail"/>
+        </association>
+    </resultMap>
+
 </mapper>
+
+<!--
+SELECT 里的字段 是 结果集 (result)，MyBatis 根据结果集的列名或列别名映射到 Java 对象。
+例如：SELECT ai.id AS apartment_id,
+       ai.name AS apartment_name
+这里结果集列名就是：
+apartment_id
+apartment_name
+这是用于映射到 Java对象的成员变量上的。
+
+<result property="apartmentId" column="apartment_id"/>
+这个标签就是在 绑定 结果集的映射关系，从字段column（本名或者别名）到 java对象的 成员变量property。
+
+FROM
+JOIN ... ON
+WHERE
+GROUP BY
+HAVING
+ORDER BY
+其他所有SQL关键字，都是向数据库表 传输指令 的，用于操作数据库表，所以要用真实的真实的字段名。我
+它们是在告诉数据库怎么查表、怎么过滤、怎么关联、怎么排序，所以应该使用真实表字段名，不然SQL不知道要操作哪个表。
+并且 WHERE 执行时，SELECT 别名还没有产生。
+-->
+
+<!--
+另外，无论是表名，还是字段名，在多表查询的时候，尽量都起别名，避免歧义，也方便查找
+-->

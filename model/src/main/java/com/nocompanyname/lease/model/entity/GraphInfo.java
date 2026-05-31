@@ -21,7 +21,7 @@ public class GraphInfo extends BaseEntity {
     @TableField(value = "item_type")
     private ItemType itemType;
 
-    @Schema(description = "图片所属对象 apartment_info 的 id主键")
+    @Schema(description = "图片所属对象 apartment/room 的 id主键")
     @TableField(value = "item_id")
     private Long itemId;
 

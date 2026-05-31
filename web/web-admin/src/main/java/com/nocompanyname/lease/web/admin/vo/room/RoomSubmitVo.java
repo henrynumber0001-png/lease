@@ -15,16 +15,16 @@ public class RoomSubmitVo extends RoomInfo {
     @Schema(description = "图片列表")
     private List<GraphVo> graphVoList;
 
-    @Schema(description = "属性信息列表")
+    @Schema(description = "属性关系列表")
     private List<Long> attrValueIds;
 
-    @Schema(description = "配套信息列表")
-    private List<Long> facilityInfoIds;
+    @Schema(description = "配套关系列表")
+    private List<Long> facilityIds;
 
-    @Schema(description = "标签信息列表")
-    private List<Long> labelInfoIds;
+    @Schema(description = "标签关系列表")
+    private List<Long> labelIds;
 
-    @Schema(description = "支付方式列表")
+    @Schema(description = "支付方式关系列表")
     private List<Long> paymentTypeIds;
 
     @Schema(description = "可选租期列表")
