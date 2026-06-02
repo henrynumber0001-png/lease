@@ -4,4 +4,85 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nocompanyname.lease.web.admin.mapper.ViewAppointmentMapper">
 
+
+    <select id="getPage" resultMap="AppointmentVoMap">
+
+        SELECT va.id AS va_id,
+               va.user_id,
+               va.name AS va_name,
+               va.phone AS va_phone,
+               va.apartment_id,
+               va.appointment_time,
+               va.additional_info,
+               va.appointment_status,
+               ai.id         AS ai_id,
+               ai.name       AS ai_name,
+               ai.introduction,
+               ai.district_id,
+               ai.district_name,
+               ai.city_id,
+               ai.city_name,
+               ai.province_id,
+               ai.province_name,
+               ai.address_detail,
+               ai.latitude,
+               ai.longitude,
+               ai.phone      AS ai_phone,
+               ai.is_release AS ai_is_release
+
+        FROM view_appointment va
+                 LEFT JOIN apartment_info ai
+                           ON va.apartment_id = ai.id AND ai.is_deleted = 0
+                    <where>
+                        va.is_deleted = 0
+                        <if test = "queryVo.provinceId != null"> <!-- long类型 只有null 和 有值（比如11010L）两种 -->
+                            AND ai.province_id = #{queryVo.provinceId}
+                        </if>
+                        <if test = "queryVo.cityId != null">
+                            AND ai.city_id = #{queryVo.cityId}
+                        </if>
+                        <if test = "queryVo.districtId != null">
+                            AND ai.district_id = #{queryVo.districtId}
+                        </if>
+                        <if test = "queryVo.apartmentId != null">
+                            AND ai.id = #{queryVo.apartmentId}
+                        </if>
+                        <if test = "queryVo.name != null and queryVo.name != ''"> <!-- String类型 有null, '' 和 具体值 三种 -->
+                            AND va.name like concat('%', #{queryVo.name}, '%')
+                        </if>
+                        <if test = "queryVo.phone != null and queryVo.phone != ''">
+                            AND va.phone like concat('%', #{queryVo.phone}, '%') <!-- =是精确匹配，like是模糊匹配，%是通配符，表示任意个字符，concat是字符串拼接 -->
+                        </if>
+                    </where>
+
+    </select>
+
+    <resultMap id="AppointmentVoMap" type="AppointmentVo">
+        <id property="id" column="va_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="name" column="va_name"/>
+        <result property="phone" column="va_phone"/>
+        <result property="appointmentTime" column="appointment_time"/>
+        <result property="additionalInfo" column="additional_info"/>
+        <result property="appointmentStatus" column="appointment_status"/>
+        <association property="apartmentInfo" javaType="ApartmentInfo">
+            <id property="id" column="ai_id"/>
+            <result property="name" column="ai_name"/>
+            <result property="introduction" column="introduction"/>
+            <result property="districtId" column="district_id"/>
+            <result property="districtName" column="district_name"/>
+            <result property="cityId" column="city_id"/>
+            <result property="cityName" column="city_name"/>
+            <result property="provinceId" column="province_id"/>
+            <result property="provinceName" column="province_name"/>
+            <result property="addressDetail" column="address_detail"/>
+            <result property="latitude" column="latitude"/>
+            <result property="longitude" column="longitude"/>
+            <result property="phone" column="ai_phone"/>
+            <result property="isRelease" column="ai_is_release"/>
+        </association>
+
+    </resultMap>
+
+
 </mapper>

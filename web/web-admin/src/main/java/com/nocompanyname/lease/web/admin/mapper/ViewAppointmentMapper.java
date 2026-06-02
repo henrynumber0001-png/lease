@@ -3,6 +3,9 @@ package com.nocompanyname.lease.web.admin.mapper;
 import com.nocompanyname.lease.model.entity.ViewAppointment;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nocompanyname.lease.web.admin.vo.appointment.AppointmentQueryVo;
+import com.nocompanyname.lease.web.admin.vo.appointment.AppointmentVo;
+import org.apache.ibatis.annotations.Param;
 
 /**
 * @author liubo
@@ -12,6 +15,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 */
 public interface ViewAppointmentMapper extends BaseMapper<ViewAppointment> {
 
+
+    IPage<AppointmentVo> getPage(IPage<AppointmentVo> page,@Param("queryVo") AppointmentQueryVo queryVo);
 }
 
 

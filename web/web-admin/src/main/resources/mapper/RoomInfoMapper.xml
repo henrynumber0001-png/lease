@@ -80,6 +80,7 @@
 </mapper>
 
 <!--
+1. 结果列 别名 ——推荐只用在 SELECT 语句内（主要是给结果集映射到Java对象使用）
 SELECT 里的字段 是 结果集 (result)，MyBatis 根据结果集的列名或列别名映射到 Java 对象。
 例如：SELECT ai.id AS apartment_id,
        ai.name AS apartment_name
@@ -91,15 +92,36 @@ apartment_name
 <result property="apartmentId" column="apartment_id"/>
 这个标签就是在 绑定 结果集的映射关系，从字段column（本名或者别名）到 java对象的 成员变量property。
 
-FROM
+
 JOIN ... ON
 WHERE
 GROUP BY
 HAVING
 ORDER BY
-其他所有SQL关键字，都是向数据库表 传输指令 的，用于操作数据库表，所以要用真实的真实的字段名。我
+其他所有SQL关键字，都是向数据库表 传输指令 的，用于操作数据库表，所以要用真实的列名。
 它们是在告诉数据库怎么查表、怎么过滤、怎么关联、怎么排序，所以应该使用真实表字段名，不然SQL不知道要操作哪个表。
-并且 WHERE 执行时，SELECT 别名还没有产生。
+
+ORDER BY / GROUP BY/ HAVING 在部分数据可用 列别名，但为了安全性，统一使用真实列名。
+ON 和 WHERE 是绝对不能用 列别名。
+
+表别名.实际列名 这个是全SQL通用的，所以更稳。
+
+2. 表 别名
+在SQL中的绝大部分关键字中都能使用（注意这一点和 结果列别名 有很大不同）
+
+SELECT
+JOIN ... ON
+WHERE
+GROUP BY
+HAVING
+ORDER BY
+子查询
+UPDATE / DELETE 的部分语法中
+只要这个位置是在引用“某张表的字段”，一般都可以使用表别名。
+SQL 查询过程中大多数地方都能用。
+
+这个规则 和 列别名 规则有很大区别。
+
 -->
 
 <!--

@@ -21,9 +21,9 @@ import java.util.List;
 @RequestMapping("/admin/attr")
 public class AttrController {
     @Autowired
-    AttrKeyService attrKeyService;
+    private AttrKeyService attrKeyService;
     @Autowired
-    AttrValueService attrValueService;
+    private AttrValueService attrValueService;
 
     @Operation(summary = "新增或更新属性名称")
     @PostMapping("key/saveOrUpdate")

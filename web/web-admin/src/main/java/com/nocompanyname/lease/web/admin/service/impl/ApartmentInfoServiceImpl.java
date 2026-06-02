@@ -249,12 +249,12 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
     public ApartmentDetailVo getDetailById(Long id) {
 
         if (id == null) {
-            return null;
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
         }
         ApartmentInfo apartmentInfo = this.getById(id); //WHERE id = #{id}，返回apartment_info这张表的全部字段信息。这就是ApartmentInfoMapper的作用
 
         if (apartmentInfo == null) {
-            return null; //没查到任何apartment_info数据
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR); //没查到任何apartment_info数据
         }
 
         ApartmentDetailVo apartmentDetailVo = new ApartmentDetailVo(); //Vo类没有Service，也就没办法@Autowired一个它的实现类对象。但是我们可以使用 new对象的方式，创建一个对象，反正也只有这个方法内需要用到它。
@@ -435,7 +435,6 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
         return this.list(queryWrapper);
 
     }
-
 
 }
 

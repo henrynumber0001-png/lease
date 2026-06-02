@@ -35,46 +35,46 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         implements RoomInfoService {
 
     @Autowired
-    GraphInfoService graphInfoService;
+    private GraphInfoService graphInfoService;
 
     @Autowired
-    RoomAttrValueService roomAttrValueService;
+    private RoomAttrValueService roomAttrValueService;
 
     @Autowired
-    RoomFacilityService roomFacilityService;
+    private RoomFacilityService roomFacilityService;
 
     @Autowired
-    RoomLabelService roomLabelService;
+    private RoomLabelService roomLabelService;
 
     @Autowired
-    RoomPaymentTypeService roomPaymentTypeService;
+    private RoomPaymentTypeService roomPaymentTypeService;
 
     @Autowired
-    RoomLeaseTermService roomLeaseTermService;
+    private RoomLeaseTermService roomLeaseTermService;
 
     @Autowired
-    ApartmentInfoService apartmentInfoService;
+    private ApartmentInfoService apartmentInfoService;
 
     @Autowired
-    RoomInfoMapper roomInfoMapper;
+    private RoomInfoMapper roomInfoMapper;
 
     @Autowired
-    AttrValueService attrValueService;
+    private AttrValueService attrValueService;
 
     @Autowired
-    AttrKeyService attrKeyService;
+    private AttrKeyService attrKeyService;
 
     @Autowired
-    FacilityInfoService facilityInfoService;
+    private FacilityInfoService facilityInfoService;
 
     @Autowired
-    LabelInfoService labelInfoService;
+    private LabelInfoService labelInfoService;
 
     @Autowired
-    PaymentTypeService paymentTypeService;
+    private PaymentTypeService paymentTypeService;
 
     @Autowired
-    LeaseTermService leaseTermService;
+    private LeaseTermService leaseTermService;
 
     @Transactional
     @Override
@@ -84,7 +84,13 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         boolean update = roomSubmitVo.getId() != null;
 
         //无论 新增还是更新，都要将RoomSubmitVo中 继承的 RoomInfo这个部分的属性先更新进去
-        this.saveOrUpdate(roomSubmitVo); //本身就在RoomInfoService的实现类中，因此不用调用RoomInfoService了
+        this.saveOrUpdate(roomSubmitVo);
+        //本身就在RoomInfoService的实现类中，因此不用调用RoomInfoService了
+        //为什么这一步要这样操作？
+        // 因为这是一个多表信息的更新or新增操作，相当于是前端将要执行更新or新增的表信息，全部都放到Vo类中了
+        // 这其中就包括了room_info表
+        //所以你要理解，对于更新or新增操作，传入的Vo类，是为了让你往它包含的类中放数据用的
+        //针对主表room_info，会保存roomSubmitVo中被包含的全部字段
 
         Long roomId = roomSubmitVo.getId();
 
@@ -240,15 +246,15 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
     @Override
     public RoomDetailVo getDetailById(Long id) {
-        if(id == null) { //不加条件判断，getById(id)可能会报空指针异常
-            return null; //防止NonpointerException
+        if (id == null) { //不加条件判断，getById(id)可能会报空指针异常
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR); //防止NonpointerException
         }
 
         RoomInfo roomInfo = this.getById(id); //这里是id != null
         if (roomInfo == null) {
             //如果id 有值，但是数据库里没有这个房间（即，匹配不到），不会报空指针异常，而是返回 结果：空/NULL（即什么也没查到，但这不是语法错误）
             //如果不写这个判断，后面任何拿着这个roomInfo再去调用其他方法时，都会报空指针异常
-            return null;
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
         }
 
         RoomDetailVo roomDetailVo = new RoomDetailVo();
@@ -301,7 +307,16 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
                 .stream()
                 .map(RoomAttrValue::getAttrValueId)
                 .collect(Collectors.toList());
+        /*
+        当List<RoomAttrValue> roomAttrValueList 是一个空列表时，
+        List<Long> attrValueIds 也会是一个空列表，不会报空指针异常。
 
+        因为空列表[].stream() 是合法的，只是流里没有任何元素。
+        .map(RoomAttrValue::getAttrValueId) 不会被执行任何一次。
+        .collect(Collectors.toList()); 会收集出来一个空列表 attrValueIds。
+         */
+
+        //要加入到setAttrValueVoList方法的参数
         List<AttrValueVo> attrValueVoList = new ArrayList<>();
         if (!attrValueIds.isEmpty()) {
             List<AttrValue> attrValues = attrValueService.listByIds(attrValueIds);
@@ -314,7 +329,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
 
             attrValues.forEach(attrValue -> {
+
                 AttrValueVo attrValueVo = new AttrValueVo();
+
                 BeanUtils.copyProperties(attrValue, attrValueVo);
                 attrValueVo.setAttrKeyName(attrKeyMap.get(attrValue.getAttrKeyId()));
                 //不要用对象直接调用 attrKeyId 属性，因为@Data注解下，属性都是private的，要用get方法
@@ -334,7 +351,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         LambdaQueryWrapper<RoomFacility> roomFacilityQueryWrapper = new LambdaQueryWrapper<>();
         roomFacilityQueryWrapper.eq(RoomFacility::getRoomId, id);
         //已经通过设置id的过滤条件，确保不会传入null，导致空指针异常
-        //但还是会出现 根据roomId查询不到数据（roomId不存在），但不会报空指针异常，而是返回空列表
+        //但还是会出现 根据roomId查询不到数据（roomId是9999），但不会报空指针异常，而是返回空列表
 
         List<RoomFacility> roomFacilities = roomFacilityService.list(roomFacilityQueryWrapper);
 
@@ -374,7 +391,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
                 .collect(Collectors.toList());
 
         List<PaymentType> paymentTypeList = new ArrayList<>();
-        if(!paymentTypeIds.isEmpty()) {
+        if (!paymentTypeIds.isEmpty()) {
             paymentTypeList = paymentTypeService.listByIds(paymentTypeIds);
         }
         roomDetailVo.setPaymentTypeList(paymentTypeList); //允许返回空集合
@@ -388,7 +405,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
                 .collect(Collectors.toList());
 
         List<LeaseTerm> leaseTermList = new ArrayList<>();
-        if(!leaseTermIds.isEmpty()) {
+        if (!leaseTermIds.isEmpty()) {
             leaseTermList = leaseTermService.listByIds(leaseTermIds);
         }
         roomDetailVo.setLeaseTermList(leaseTermList);
@@ -398,7 +415,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
     @Override
     public void removeByRoomId(Long id) {
-        if(id == null) {
+        if (id == null) {
             throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
         }
 
@@ -429,22 +446,22 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
         //删除属性关系 RoomAttrValue
         LambdaQueryWrapper<RoomFacility> roomFacilityQueryWrapper = new LambdaQueryWrapper<>();
-        roomFacilityQueryWrapper.eq(RoomFacility::getRoomId,id);
+        roomFacilityQueryWrapper.eq(RoomFacility::getRoomId, id);
         roomFacilityService.remove(roomFacilityQueryWrapper);
 
         //删除RoomLabel
         LambdaQueryWrapper<RoomLabel> roomLabelQueryWrapper = new LambdaQueryWrapper<>();
-        roomLabelQueryWrapper.eq(RoomLabel::getRoomId,id);
+        roomLabelQueryWrapper.eq(RoomLabel::getRoomId, id);
         roomLabelService.remove(roomLabelQueryWrapper);
 
         //删除RoomPaymentType
         LambdaQueryWrapper<RoomPaymentType> roomPaymentTypeQueryWrapper = new LambdaQueryWrapper<>();
-        roomPaymentTypeQueryWrapper.eq(RoomPaymentType::getRoomId,id);
+        roomPaymentTypeQueryWrapper.eq(RoomPaymentType::getRoomId, id);
         roomPaymentTypeService.remove(roomPaymentTypeQueryWrapper);
 
         //删除RoomLeaseTerm
         LambdaQueryWrapper<RoomLeaseTerm> roomLeaseTermQueryWrapper = new LambdaQueryWrapper<>();
-        roomLeaseTermQueryWrapper.eq(RoomLeaseTerm::getRoomId,id);
+        roomLeaseTermQueryWrapper.eq(RoomLeaseTerm::getRoomId, id);
         roomLeaseTermService.remove(roomLeaseTermQueryWrapper);
 
 
@@ -453,7 +470,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
     @Override
     public void updateReleaseStatusById(Long id, ReleaseStatus status) {
 
-        if(id == null || status == null) {
+        if (id == null || status == null) {
             throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
         }
         //执行失败的情况，统一用全局异常处理，这样不仅能知道false的原因，而且还能保证返回到Controller层的一定是true的
@@ -471,7 +488,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
          */
 
         boolean update = this.update(roomInfoUpdateWrapper);
-        if(!update) {
+        if (!update) {
             //没找到roomId，所以更新失败
             //至于枚举值的错误，在Spring进入到Controller方法前，就会在枚举转换器中抛出IllegalArgumentException，所以不用写在Service层的业务异常里,而是在全局异常处理类中设置处理方法
             throw new LeaseException(ResultCodeEnum.PARAM_ERROR);

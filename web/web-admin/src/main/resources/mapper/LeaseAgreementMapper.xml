@@ -4,4 +4,134 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nocompanyname.lease.web.admin.mapper.LeaseAgreementMapper">
 
+    <select id="getPage" resultMap="AgreementVoMap">
+        SELECT la.id           AS la_id,
+               la.phone        AS la_phone,
+               la.name         AS la_name,
+               la.identification_number,
+               la.apartment_id AS la_apartment_id,
+               la.room_id,
+               la.lease_start_date,
+               la.lease_end_date,
+               la.lease_term_id,
+               la.rent         AS la_rent,
+               la.deposit      AS la_deposit,
+               la.payment_type_id,
+               la.status       AS la_status,
+               la.source_type,
+               la.additional_info AS la_additional_info,
+               ri.id           AS ri_id,
+               ri.room_number,
+               ri.rent         AS ri_rent,
+               ri.apartment_id AS ri_apartment_id,
+               ri.is_release   AS ri_is_release,
+               ai.id           AS ai_id,
+               ai.name         AS ai_name,
+               ai.introduction AS ai_introduction,
+               ai.district_id,
+               ai.district_name,
+               ai.city_id,
+               ai.city_name,
+               ai.province_id,
+               ai.province_name,
+               ai.address_detail,
+               ai.latitude,
+               ai.longitude,
+               ai.phone        AS ai_phone,
+               ai.is_release   AS ai_is_release,
+               pt.id           AS pt_id,
+               pt.name         AS pt_name,
+               pt.pay_month_count,
+               pt.additional_info AS pt_additional_info,
+               lt.id           AS lt_id,
+               lt.month_count,
+               lt.unit
+        FROM lease_agreement la
+                 LEFT JOIN room_info ri
+                           ON la.room_id = ri.id AND ri.is_deleted = 0
+                 LEFT JOIN apartment_info ai
+                           ON ri.apartment_id = ai.id AND ai.is_deleted = 0
+                 LEFT JOIN payment_type pt
+                           ON la.payment_type_id = pt.id AND pt.is_deleted = 0
+                 LEFT JOIN lease_term lt
+                           ON la.lease_term_id = lt.id AND lt.is_deleted = 0
+
+        <where>
+            la.is_deleted = 0
+            <if test = "queryVo.provinceId != null">
+                AND ai.province_id = #{queryVo.provinceId}
+            </if>
+            <if test = "queryVo.cityId != null">
+                AND ai.city_id = #{queryVo.cityId}
+            </if>
+            <if test = "queryVo.districtId != null">
+                AND ai.district_id = #{queryVo.districtId}
+            </if>
+            <if test = "queryVo.apartmentId != null">
+                AND ai.id = #{queryVo.apartmentId}
+            </if>
+            <if test = "queryVo.roomNumber != null">
+                AND ri.room_number = #{queryVo.roomNumber}
+            </if>
+            <if test = "queryVo.name != null">
+                AND la.name LIKE CONCAT('%', #{queryVo.name}, '%')
+            </if>
+            <if test="queryVo.phone != null">
+                AND la.phone like CONCAT('%',#{queryVo.phone},'%')
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="AgreementVoMap" type="AgreementVo">
+        <id property="id" column="la_id"/>
+        <result property="name" column="la_name"/>
+        <result property="phone" column="la_phone"/>
+        <result property="identificationNumber" column="identification_number"/>
+        <result property="apartmentId" column="la_apartment_id"/>
+        <result property="roomId" column="room_id"/>
+        <result property="leaseStartDate" column="lease_start_date"/>
+        <result property="leaseEndDate" column="lease_end_date"/>
+        <result property="leaseTermId" column="lt_term_id"/>
+        <result property="rent" column="la_rent"/>
+        <result property="deposit" column="la_deposit"/>
+        <result property="paymentTypeId" column="payment_type_id"/>
+        <result property="status" column="la_status"/>
+        <result property="sourceType" column="la_source_type"/>
+        <result property="additionalInfo" column="la_additional_info"/>
+        <association property="roomInfo" javaType="RoomInfo">
+            <id property="id" column="room_id"/>
+            <result property="roomNumber" column="room_number"/>
+            <result property="rent" column="room_rent"/>
+            <result property="apartmentId" column="room_apartment_id"/>
+            <result property="isRelease" column="room_is_release"/>
+        </association>
+        <association property="apartmentInfo" javaType="ApartmentInfo">
+            <id property="id" column="ai_id"/>
+            <result property="name" column="ai_name"/>
+            <result property="introduction" column="ai_introduction"/>
+            <result property="districtId" column="district_id"/>
+            <result property="provinceId" column="province_id"/>
+            <result property="cityId" column="city_id"/>
+            <result property="provinceName" column="province_name"/>
+            <result property="cityName" column="city_name"/>
+            <result property="districtName" column="district_name"/>
+            <result property="addressDetail" column="address_detail"/>
+            <result property="longitude" column="longitude"/>
+            <result property="latitude" column="latitude"/>
+            <result property="phone" column="ai_phone"/>
+            <result property="isRelease" column="ai_is_release"/>
+        </association>
+        <association property="paymentType" javaType="PaymentType">
+            <id property="id" column="pt_id"/>
+            <result property="name" column="pt_name"/>
+            <result property="additionalInfo" column="pt_additional_info"/>
+            <result property="payMonthCount" column="pay_month_count"/>
+        </association>
+        <association property="leaseTerm" javaType="LeaseTerm">
+            <id property="id" column="lt_id"/>
+            <result property="monthCount" column="month_count"/>
+            <result property="unit" column="unit"/>
+        </association>
+
+    </resultMap>
 </mapper>

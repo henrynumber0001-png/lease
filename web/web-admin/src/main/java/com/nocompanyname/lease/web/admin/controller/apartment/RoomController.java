@@ -23,7 +23,7 @@ import java.util.List;
 public class RoomController {
 
     @Autowired
-    RoomInfoService roomInfoService;
+    private RoomInfoService roomInfoService;
 
     @Operation(summary = "保存或更新房间信息")
     @PostMapping("saveOrUpdate")

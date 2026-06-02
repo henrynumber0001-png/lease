@@ -1,5 +1,6 @@
 package com.nocompanyname.lease.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.nocompanyname.lease.model.enums.AppointmentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -33,6 +34,8 @@ public class ViewAppointment extends BaseEntity {
 
     @Schema(description = "预约时间")
     @TableField(value = "appointment_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    //默认情况下，Spring Boot/Jackson 通常会返回 ISO 格式："appointmentTime": "2026-06-01T21:30:00"
     private Date appointmentTime;
 
     @Schema(description = "备注信息")

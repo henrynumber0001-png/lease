@@ -8,6 +8,8 @@ import lombok.Data;
 @Schema(description = "租约信息")
 public class AgreementVo extends LeaseAgreement {
 
+    //别忘了AgreementVo中是有LeaseAgreement的全部属性的
+
     @Schema(description = "签约公寓信息")
     private ApartmentInfo apartmentInfo;
 
