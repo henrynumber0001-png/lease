@@ -1,7 +1,9 @@
 package com.nocompanyname.lease.web.admin.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nocompanyname.lease.model.entity.SystemPost;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nocompanyname.lease.model.enums.BaseStatus;
 
 /**
 * @author liubo
@@ -10,4 +12,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface SystemPostService extends IService<SystemPost> {
 
+    IPage<SystemPost> getPage(long current, long size);
+
+    void saveOrUpdatePost(SystemPost systemPost);
+
+    void removeByPostId(Long id);
+
+    SystemPost getByPostId(Long id);
+
+    void updateStatusByPostId(Long id, BaseStatus status);
 }

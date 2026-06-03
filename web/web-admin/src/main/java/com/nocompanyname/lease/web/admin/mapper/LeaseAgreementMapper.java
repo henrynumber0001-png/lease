@@ -1,5 +1,6 @@
 package com.nocompanyname.lease.web.admin.mapper;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nocompanyname.lease.model.entity.LeaseAgreement;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -15,7 +16,7 @@ import org.apache.ibatis.annotations.Param;
 */
 public interface LeaseAgreementMapper extends BaseMapper<LeaseAgreement> {
 
-    IPage<AgreementVo> getPage(IPage<AgreementVo> page,@Param("queryVo") AgreementQueryVo queryVo);
+    IPage<AgreementVo> getPage(Page<AgreementVo> page, @Param("queryVo") AgreementQueryVo queryVo);
 }
 
 

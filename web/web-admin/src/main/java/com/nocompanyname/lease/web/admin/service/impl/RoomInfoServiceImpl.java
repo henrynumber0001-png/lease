@@ -232,6 +232,19 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
         //先创建一个 空的分页容器
         Page<RoomItemVo> page = new Page<>(current, size);
+        //注意：你创建的是Page实现类的对象，而不是使用更抽象的IPage接口作为 变量类型。
+        /*
+        因为创建出来的真实对象就是 Page。
+        Page 是 MyBatis-Plus 提供的具体分页实现类，
+        所以在 Service 层“创建分页容器”这个动作上，用具体类型更直观。
+        而 IPage<UserInfo> 更适合用在方法返回值上，
+        这样外部只需要知道返回的是“分页结果接口”，不关心具体实现类。
+
+        可以理解为：
+        局部变量：用 Page，因为你确实是在创建 Page。
+        方法返回值：用 IPage，因为对外暴露接口更抽象。
+         */
+
         return roomInfoMapper.getBypageItem(page, queryVo);
 
         /*
