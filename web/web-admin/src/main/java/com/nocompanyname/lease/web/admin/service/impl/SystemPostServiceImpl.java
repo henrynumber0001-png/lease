@@ -35,6 +35,9 @@ public class SystemPostServiceImpl extends ServiceImpl<SystemPostMapper, SystemP
         无查询条件、简单条件查询、单表查询，可以直接用MyBatis-Plus的预定义方法:
         Service层 page(page)/ Mapper层：selectPage(page,null)
         提高性能，减少操作
+
+        但是只要涉及到多表，或者关联条件，比如Vo类，那么就要用Mapper.xml，
+        因为 this.page()无法返回Vo类，只能返回实体类自己
          */
     }
 

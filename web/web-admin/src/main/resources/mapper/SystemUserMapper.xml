@@ -4,4 +4,32 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nocompanyname.lease.web.admin.mapper.SystemUserMapper">
 
+    <select id="getPage" resultType="com.nocompanyname.lease.web.admin.vo.system.user.SystemUserItemVo">
+        SELECT su.id,
+        <!-- resultType 是自动映射，它会按查询结果里的列名，去找 Java 对象里的属性名。 -->
+        <!-- 没有resultMap中的 property 和 column 绑定 -->
+        <!-- 所以当 查询列名是 name，那么对应的 SystemUserItemVo 的 成员变量名 也必须是 name -->
+        <!-- additional_info 因为有自动驼峰命名的配置，会自动映射到 additionalInfo -->
+               su.username,
+               su.name,
+               su.type,
+               su.phone,
+               su.avatar_url,
+               su.additional_info,
+               su.post_id,
+               su.status,
+               sp.name AS post_name <!-- sp.name 不是能用别名，而是必须要用别名，因为只有别名才能映射到 成员变量 postName -->
+        FROM system_user su
+                 LEFT JOIN system_post sp
+                           ON su.post_id = sp.id AND sp.is_deleted = 0
+        <where>
+            su.is_deleted = 0
+        <if test="queryVo.phone != null and queryVo.phone != ''">
+            AND su.phone LIKE CONCAT('%', #{queryVo.phone}, '%')
+        </if>
+        <if test="queryVo.name != null and queryVo.name != ''">
+            AND su.name LIKE CONCAT('%', #{queryVo.name}, '%')
+        </if>
+        </where>
+    </select>
 </mapper>
