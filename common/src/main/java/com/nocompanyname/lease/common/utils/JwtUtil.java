@@ -1,0 +1,79 @@
+package com.nocompanyname.lease.common.utils;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.util.Date;
+
+@Component
+public class JwtUtil {
+
+    private final String issuer;
+    private final long ttlSeconds; //有效期
+    private final SecretKey secretKey; //签名密钥
+    private final JwtParser jwtParser; //JWT 解析器
+
+    public JwtUtil(
+            @Value("${jwt.issuer}") String issuer, //从application.yml中把key的值注入到 构造方法JwtUtil的参数列表
+            @Value("${jwt.secret-key}") String secretKey,
+            @Value("${jwt.ttl-seconds}") long ttlSeconds) {
+
+        this.issuer = issuer;
+        this.ttlSeconds = ttlSeconds;
+
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey); //把配置文件里的 Base64（编码后的） 字符串密钥，解码成字节数组。
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes); //把字节数组转换成 JWT 签名可以使用的密钥对象。
+
+        //创建JWT解析器
+        this.jwtParser = Jwts.parserBuilder()
+                .setSigningKey(this.secretKey) //解析 token 时，必须用这个密钥验证签名；如果 token 被别人改过，验证会失败。
+                .requireIssuer(issuer) //token 里的签发者必须等于当前系统配置的 issuer。
+                .build();
+    }
+
+
+    //生成token的方法：登陆成功后，根据 用户Id 和 用户名 生成JWT
+    public String createToken(Long userId, String username) {
+
+        Instant now = Instant.now(); //获取当前时间
+        Instant expiration = now.plusSeconds(ttlSeconds); //计算 token 过期时间
+
+
+        //createToken方法中 真正创建JWT的地方
+        return Jwts.builder()
+                .setIssuer(issuer) //设置签发者
+                .setSubject(userId.toString()) //设置主题，含义：这个 token 属于 userId = 1001 的用户（id 比 username 稳定，可以把subject 理解成 id）。
+                .claim("username", username) //添加自定义信息：这里就是在前端的payload里，增加username字段
+                .setIssuedAt(Date.from(now)) //设置签发时间
+                .setExpiration(Date.from(expiration)) //设置过期时间
+                .signWith(secretKey)
+                /*
+                用密钥签名，这是JWT安全性的核心。
+                签名的作用是：防止 token 被篡改。
+                 */
+
+                .compact(); //把前面设置的内容压缩生成最终的 JWT 字符串。
+    }
+
+    //解析 JWT，并返回里面的用户信息 给后端开发自己看的
+    public Claims parseToken(String token) {
+        return jwtParser
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public Long getUserId(String token) {
+        String subject = parseToken(token).getSubject();
+        return Long.valueOf(subject);
+    }
+
+    public String getUsername(String token) {
+        return parseToken(token).get("username", String.class);
+    }
+}
