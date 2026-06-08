@@ -4,10 +4,12 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
@@ -20,21 +22,49 @@ public class JwtUtil {
     private final JwtParser jwtParser; //JWT 解析器
 
     public JwtUtil(
-            @Value("${jwt.issuer}") String issuer, //从application.yml中把key的值注入到 构造方法JwtUtil的参数列表
-            @Value("${jwt.secret-key}") String secretKey,
-            @Value("${jwt.ttl-seconds}") long ttlSeconds) {
+            @Value("${jwt.issuer:}") String issuer, //从application.yml中把key的值注入到 构造方法JwtUtil的参数列表
+            @Value("${jwt.secret-key:}") String secretKey,
+            @Value("${jwt.ttl-seconds:36000}") long ttlSeconds) {
+
+        validateConfig(issuer, secretKey, ttlSeconds);
+        //它不是为了“绕过错误”，而是为了让错误更早、更明确地暴露出来。
+        // 以前如果 JWT_SECRET_KEY 没配或格式不对，错误会在 Base64 解码或生成密钥时爆出来，看起来比较模糊；现在会明确告诉你是哪一项 JWT 配置有问题。
 
         this.issuer = issuer;
         this.ttlSeconds = ttlSeconds;
-
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey); //把配置文件里的 Base64（编码后的） 字符串密钥，解码成字节数组。
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes); //把字节数组转换成 JWT 签名可以使用的密钥对象。
+        this.secretKey = createSecretKey(secretKey);
 
         //创建JWT解析器
         this.jwtParser = Jwts.parserBuilder()
                 .setSigningKey(this.secretKey) //解析 token 时，必须用这个密钥验证签名；如果 token 被别人改过，验证会失败。
                 .requireIssuer(issuer) //token 里的签发者必须等于当前系统配置的 issuer。
                 .build();
+    }
+
+    private void validateConfig(String issuer, String secretKey, long ttlSeconds) {
+        if (issuer == null || issuer.isBlank()) {
+            throw new IllegalStateException("JWT configuration error: jwt.issuer must not be blank");
+        }
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT configuration error: jwt.secret-key is missing. Set JWT_SECRET_KEY or configure jwt.secret-key");
+        }
+        if (ttlSeconds <= 0) {
+            throw new IllegalStateException("JWT configuration error: jwt.ttl-seconds must be greater than 0");
+        }
+    }
+
+    private SecretKey createSecretKey(String secretKey) {
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey); //支持 Base64 编码后的密钥。
+        } catch (DecodingException e) {
+            keyBytes = secretKey.getBytes(StandardCharsets.UTF_8); //也支持普通字符串密钥，便于本地和环境变量配置。
+        }
+
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("JWT configuration error: jwt.secret-key must be at least 32 bytes after decoding");
+        }
+        return Keys.hmacShaKeyFor(keyBytes); //把字节数组转换成 JWT 签名可以使用的密钥对象。
     }
 
 

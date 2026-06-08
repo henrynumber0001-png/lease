@@ -32,8 +32,6 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -282,8 +280,8 @@ public class LoginServiceImpl implements LoginService {
                │
                ▼
 ┌──────────────────────────────┐
-│ 用户输入：                     │
-│ 用户名、密码、验证码            │
+│ 用户输入:                     │
+│ 用户名,密码,验证码              │
 └──────────────┬───────────────┘
                │
                ▼

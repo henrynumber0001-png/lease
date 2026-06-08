@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @MapperScan("com.nocompanyname.lease.web.admin.mapper")
+
+//MyBatis-Plus 的全局配置类，用来注册 Mapper 扫描和分页插件。
 public class MybatisPlusConfiguration {
 
     @Bean

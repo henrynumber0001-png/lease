@@ -1,10 +1,12 @@
 package com.nocompanyname.lease.common.minio;
 
 import io.minio.MinioClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty(name = "minio.endpoint")
 public class MinioConfig {
 
     @Bean

@@ -6,11 +6,6 @@ import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-
-import static java.awt.SystemColor.info;
 
 @Configuration
 public class Knife4jConfiguration {
