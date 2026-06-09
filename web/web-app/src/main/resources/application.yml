@@ -40,3 +40,9 @@ jwt:
   issuer: web-app
   secret-key: ${JWT_SECRET_KEY}
   ttl-seconds: 36000
+
+aliyun:
+  sms:
+    access-key-id: ${ALIYUN_SMS_ACCESS_KEY_ID}
+    access-key-secret: ${ALIYUN_SMS_ACCESS_KEY_SECRET}
+    endpoint: dysmsapi.aliyuncs.com
