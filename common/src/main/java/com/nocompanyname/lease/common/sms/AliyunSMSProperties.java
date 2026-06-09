@@ -10,5 +10,7 @@ public class AliyunSMSProperties {
     private String accessKeyId;
     private String accessKeySecret;
     private String endpoint;
+    private String signName;
+    private String templateCode;
 
 }

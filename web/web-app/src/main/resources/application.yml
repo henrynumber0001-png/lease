@@ -46,3 +46,5 @@ aliyun:
     access-key-id: ${ALIYUN_SMS_ACCESS_KEY_ID}
     access-key-secret: ${ALIYUN_SMS_ACCESS_KEY_SECRET}
     endpoint: dysmsapi.aliyuncs.com
+    sign-name: 验证码短信 #短信签名（标题）
+    template-code: SMS_334990739 #需要使用的 短信模板

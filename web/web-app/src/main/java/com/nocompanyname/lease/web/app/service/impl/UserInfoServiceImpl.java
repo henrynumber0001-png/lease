@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nocompanyname.lease.model.entity.UserInfo;
 import com.nocompanyname.lease.web.app.service.UserInfoService;
 import com.nocompanyname.lease.web.app.mapper.UserInfoMapper;
+import com.nocompanyname.lease.web.app.vo.user.UserInfoVo;
 import com.wf.captcha.SpecCaptcha;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,6 @@ import org.springframework.stereotype.Service;
 public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
     implements UserInfoService{
 
-    @Override
-    public void getCode(String phone) {
-
-
-    }
 }
 
 

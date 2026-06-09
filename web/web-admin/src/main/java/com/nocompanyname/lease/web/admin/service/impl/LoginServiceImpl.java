@@ -136,6 +136,7 @@ public class LoginServiceImpl implements LoginService {
         //以后修改 Redis 结构更容易
         String redisKey = RedisConstant.ADMIN_LOGIN_PREFIX + loginVo.getCaptchaKey();
         String captchaCode = stringRedisTemplate.opsForValue().get(redisKey);
+        //这里，理论上，只要是能获得code，那么就一定是redis里对应的正确答案（前提，浏览器永远只存储唯一captchaKey）
 
         if(!StringUtils.hasText(captchaCode)){
             throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_CODE_EXPIRED);
@@ -159,6 +160,7 @@ public class LoginServiceImpl implements LoginService {
                 .select(SystemUser::getId, SystemUser::getUsername, SystemUser::getPassword,SystemUser::getStatus);
 
         SystemUser systemUser = systemUserMapper.selectOne(systemUserQueryWrapper);
+        // 根据查询条件，只给select的字段: id,user_name,password,status 所对应的成员变量赋值，其余成员变量的值=null
 
         if(systemUser == null){
             throw new LeaseException(ResultCodeEnum.ADMIN_ACCOUNT_EXIST_ERROR);

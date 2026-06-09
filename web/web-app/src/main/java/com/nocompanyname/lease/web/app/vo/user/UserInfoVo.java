@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Schema(description = "用户基本信息")
 @Data
-@AllArgsConstructor
+//@AllArgsConstructor
 public class UserInfoVo {
 
     @Schema(description = "用户昵称")
