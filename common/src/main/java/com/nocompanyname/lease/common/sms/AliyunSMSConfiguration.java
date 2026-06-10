@@ -15,6 +15,7 @@ public class AliyunSMSConfiguration {
 
     @Bean
     public Client createClient(AliyunSMSProperties properties) throws Exception {
+
         //这一步是在创建阿里云短信客户端（AccessKeyId,AccessKeySecret,Endpoint是连接阿里云必须的配置）
          Config config = new Config().setAccessKeyId(properties.getAccessKeyId())
                 .setAccessKeySecret(properties.getAccessKeySecret())

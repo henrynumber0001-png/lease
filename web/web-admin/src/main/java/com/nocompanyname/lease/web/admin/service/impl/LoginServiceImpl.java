@@ -136,22 +136,23 @@ public class LoginServiceImpl implements LoginService {
         //以后修改 Redis 结构更容易
         String redisKey = RedisConstant.ADMIN_LOGIN_PREFIX + loginVo.getCaptchaKey();
         String captchaCode = stringRedisTemplate.opsForValue().get(redisKey);
-        //这里，理论上，只要是能获得code，那么就一定是redis里对应的正确答案（前提，浏览器永远只存储唯一captchaKey）
+        //这里只要能获取到 captchaCode的值，那么就是redisKey在redis里的value，但是你不能确保 这个captchaCode 一定能匹配上 用户输入的 code
+        //比如连续发送两次 验证码，redis中会更新第二次的值，但你发送的是第一次的值
+        //但因为有if条件判断，如果不匹配，这正是代码设计目的的体现
 
         if(!StringUtils.hasText(captchaCode)){
             throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_CODE_EXPIRED);
         }
         //如果非空，那就说明根据 captchaKey 可以找到 captchaCode，接下来就是去验证这个返回的 captchaCode 与 loginVo 自带的是否一致
 
-
-        //第三步：验证成功后立刻删除captchaKey，无法再做二次验证，保证安全
-        stringRedisTemplate.delete(loginVo.getCaptchaKey());
-
-        //第四步：验证 captchaCode
+        //第三步：验证 captchaCode
         //redis中正确答案与输入的 captchaCode 进行比较
         if(!captchaCode.equalsIgnoreCase(loginVo.getCaptchaCode())){
             throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_CODE_ERROR);
         }
+
+        //第四步：验证成功后立刻删除captchaKey 和 对应的 code，无法再做二次验证，保证安全
+        stringRedisTemplate.delete(loginVo.getCaptchaKey());
 
         //第五步：验证码验证成功之后，接下来是验证 用户信息 是否存在，存在才能发给token，允许进入
         //先查用户名有没有（能根据用户名查到systemUser，至少说明这个 username 是存在的，至于是不是他的，还需要再继续查验密码）
