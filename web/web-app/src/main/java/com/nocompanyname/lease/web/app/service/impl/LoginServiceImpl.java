@@ -141,11 +141,14 @@ public class LoginServiceImpl implements LoginService {
 
             //当输入验证码和redis验证码不匹配时，进入计数模式
             //第一次输错后，将attemptKey的value设置为1
+            //Long increment(String key) 表示 将 Redis 中 key 对应的数值加 1，并返回加 1 后的新值
+            //如果redis中原本不存在 attemptKey，那么redis会自动将key的值从0开始计算 +1
             Long count = stringRedisTemplate.opsForValue().increment(attemptKey);
+
             if(count != null && count == 1){
                 //只有第一次输错的时候，设置过期时间，这样可以让错误次数和验证码大致在同一个时间范围内失效
                 //如果60秒内，还没验证成功 并且 输错次数不足5次，attemptKey到时间自动删除（和redisKey同时删除）
-                stringRedisTemplate.expire(
+                stringRedisTemplate.expire( //给 Redis 中的 key 设置过期时间，到时间后 Redis 自动删除这个 key。
                         attemptKey,
                         RedisConstant.APP_LOGIN_CODE_TTL_SEC,
                         TimeUnit.MINUTES);
