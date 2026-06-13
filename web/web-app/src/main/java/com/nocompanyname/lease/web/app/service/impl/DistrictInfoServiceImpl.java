@@ -1,10 +1,13 @@
 package com.nocompanyname.lease.web.app.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nocompanyname.lease.model.entity.DistrictInfo;
 import com.nocompanyname.lease.web.app.service.DistrictInfoService;
 import com.nocompanyname.lease.web.app.mapper.DistrictInfoMapper;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
 * @author liubo
@@ -15,6 +18,12 @@ import org.springframework.stereotype.Service;
 public class DistrictInfoServiceImpl extends ServiceImpl<DistrictInfoMapper, DistrictInfo>
     implements DistrictInfoService{
 
+    @Override
+    public List<DistrictInfo> listByCityId(Long id) {
+        LambdaQueryWrapper<DistrictInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(DistrictInfo::getCityId,id);
+        return this.list(queryWrapper);
+    }
 }
 
 

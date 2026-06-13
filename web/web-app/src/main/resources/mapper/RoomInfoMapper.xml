@@ -2,6 +2,151 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.atguigu.lease.web.app.mapper.RoomInfoMapper">
+<mapper namespace="com.nocompanyname.lease.web.app.mapper.RoomInfoMapper">
+    <!--这个 XML 里面的 SQL 方法，要和 RoomInfoMapper 接口中的方法对应。-->
 
+    <resultMap id="RoomItemVoMap" type="com.nocompanyname.lease.web.app.vo.room.RoomItemVo" autoMapping="true"> <!-- autoMapping="true" 开启自动映射 -->
+        <!--resultMap 作用是将 涉及到多表字段的 嵌套查询(List/Entity)结果  按照规则，映射到 Java(RoomItemVo)对象-->
+        <!--一个resultMap 对应 一个 select 标签，也就是这个select标签里的查询结果全部是要通过这个resultMap映射回Java对象的。
+        如果你有第二个需要嵌套查询的Java对象，那么要另起一个resultMap，但这通常不需要，一个Java对象，通常只有一个resultMap，再搭配子查询 selectxxxByxxxId -->
+        <id property="id" column="room_id"/>
+        <association property="apartmentInfo" javaType="com.nocompanyname.lease.model.entity.ApartmentInfo" autoMapping="true">
+            <id property="id" column="apartment_id"/>
+        </association>
+        <collection property="graphVoList" ofType="com.nocompanyname.lease.web.app.vo.graph.GraphVo" select="selectGraphVoListByRoomId" column="room_id"/>
+        <!-- 这种子查询，应对的是 嵌套查询的 List/Entity 无法直接获得需要的值，比如GraphVo，没有这个表，你无法直接让主表 left join 获取 其中字段的值，需要转接一下
+             再比如下面的LabelInfo，也是嵌套查询，但label_info这个表不直接关联room_info这个主表，也要通过中间表 转接一下
+             所以就需要用到 子查询 -->
+        <!-- select="selectGraphVoListByRoomId 表示 调用 <select id="selectGraphVoListByRoomId" 的子查询 -->
+        <!-- column="room_id" 表示把 【主查询】中的 room_id 列的值作为参数传递给子查询 -->
+        <collection property="labelInfoList" ofType="com.nocompanyname.lease.model.entity.LabelInfo" select="selectLabelInfoListByRoomId" column="room_id"/>
+        <!-- select="selectLabelInfoListByRoomId" 表示调用 <select id="selectLabelInfoListByRoomId" 子查询 -->
+        <!-- column="room_id" 表示把 【主查询】中的 room_id 列的值作为参数传递给子查询 -->
+    </resultMap>
+    <select id="getPageItem" resultMap="RoomItemVoMap"> <!-- 主查询 -->
+        SELECT ri.id AS room_id,
+               ri.room_number,
+               ri.rent,
+               ai.id AS apartment_id,
+               ai.name,
+               ai.introduction,
+               ai.district_id,
+               ai.district_name,
+               ai.city_id,
+               ai.city_name,
+               ai.province_id,
+               ai.province_name,
+               ai.address_detail,
+               ai.latitude,
+               ai.longitude,
+               ai.phone,
+               ai.is_release
+        FROM room_info ri
+                 LEFT JOIN apartment_info ai
+                           ON ri.apartment_id = ai.id AND ai.is_deleted = 0
+        <where>
+            ri.is_deleted = 0
+            AND ri.is_release = 1
+            AND ri.id NOT IN (
+                SELECT la.room_id
+                FROM lease_agreement la
+                WHERE la.room_id = ri.id <!-- 因为你现在在 主查询里，不需要写 #{}占位符 传 主查询id -->
+                  AND la.is_deleted = 0
+                  AND la.status IN (2, 5)
+            )
+            <if test="queryVo.provinceId != null">
+                AND ai.province_id = #{queryVo.provinceId}
+            </if>
+            <if test="queryVo.cityId != null">
+                AND ai.city_id = #{queryVo.cityId}
+            </if>
+            <if test="queryVo.districtId != null"> <!-- 这里的意思是，如果districtId 为null，就代表前端没有选这个条件，那么就不查询 -->
+                AND ai.district_id = #{queryVo.districtId}
+            </if>
+            <if test="queryVo.minRent != null">
+                AND ri.rent &lt;= #{queryVo.minRent}
+            </if>
+            <if test="queryVo.maxRent != null">
+                AND ri.rent &gt;= #{queryVo.maxRent}
+            </if>
+            <if test="queryVo.paymentTypeId != null">
+                <!-- 下面子查询的含义是 查询出 支持传入的 queryVo.paymentTypeId 这种支付方式的房间有哪些  -->
+
+                <!--
+                为什么不用 LEFT JOIN room_payment_type rpt ON rpt.room_id = ri.id 拼接到 主表上，然后通过 AND rpt.payment_type_id = #{queryVo.paymentTypeId} 查询呢？
+                因为 当不传入queryVo.paymentTypeId时，就会查询出多条 ri.id 重复的行数据（因为一个房间对应多个支付方式），影响浏览效果。
+
+                并不是因为 JOIN的 从表，必须要有被需要、被查询出来的字段。
+                SQL 里 JOIN 一张表，不一定要把它的字段 SELECT 出来。JOIN 可以只用于过滤。
+
+                而 ri.id IN ()这种方法，是因为整个RoomItemVo中的查询信息，全部都是以room_id为基准的，room_id也是主表room_info的主键。
+                所以只要确认主键在结果集里，就能起到过滤作用。
+
+                那么经过下面这种子查询预先筛选过之后，假设一种场景：
+                原本有：
+                101 支持 payment_type_id = 1
+                101 支持 payment_type_id = 2
+                101 支持 payment_type_id = 3
+
+                现在未输入payment_type_id，那么查询结果依然是这三条。
+                然后 ri.id 经过 IN(101)判断，只有101一个id 符合条件，那么筛选出来的最终的RoomItemVo中，只有101这一个id的对应的行数据。
+                只SELECT rpt.room_id 是因为，查询条件paymentTypeId并不在最终要返回的RoomItemVo的属性中，所以无需关心它的查询结果。
+                -->
+                AND ri.id IN (
+                    SELECT rpt.room_id
+                    FROM room_payment_type rpt
+                    WHERE rpt.room_id = ri.id
+                      AND rpt.payment_type_id = #{queryVo.paymentTypeId}
+                      AND rpt.is_deleted = 0
+                )
+            </if>
+        </where>
+        <choose>
+            <when test="queryVo.orderType == 'asc'">
+                ORDER BY ri.rent ASC, ri.id ASC
+            </when>
+            <when test="queryVo.orderType == 'desc'">
+                ORDER BY ri.rent DESC, ri.id ASC
+            </when>
+            <otherwise>
+                ORDER BY ri.id DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectGraphVoListByRoomId" resultType="com.nocompanyname.lease.web.app.vo.graph.GraphVo"> <!-- 将查询结果 自动映射到 GraphVo 这个类的对象 -->
+        SELECT name,
+               url
+        FROM graph_info gi
+        WHERE gi.item_id = #{roomId} <!-- roomId 实际接收到的就是 room_id 的值 -->
+          AND gi.item_type = 2
+          AND gi.is_deleted = 0
+        ORDER BY gi.id
+    </select>
+
+    <select id="selectLabelInfoListByRoomId" resultType="com.nocompanyname.lease.model.entity.LabelInfo">
+        SELECT li.id,
+               li.type,
+               li.name
+        FROM label_info li
+        WHERE li.is_deleted = 0
+          AND li.id in (
+              SELECT
+                  rl.label_id
+              FROM room_label rl
+              WHERE
+                  rl.is_deleted = 0
+              AND rl.room_id = #{roomId} <!-- 传入room_id，依靠的是 #{}，告诉Mybatis把值传入到哪里，不是依靠{}里的roomId， 这个名字是随便起的，和属性还有字段都无关，单纯是一个参数 -->
+            )
+        ORDER BY li.id
+        <!--
+        不是为了让 SQL 正确运行，而是为了：
+        1. 保证结果顺序稳定；
+        2. 避免数据库随机返回顺序；
+        3. 让前端展示一致；
+        4. 方便测试和排查问题；
+        5. 通常表示“按创建顺序展示”。
+        这也是为什么你会发现很多项目里，即使业务没有特别强调排序，也经常会看到 ORDER BY id，因为它更多是一种良好的工程习惯。
+        -->
+    </select>
 </mapper>

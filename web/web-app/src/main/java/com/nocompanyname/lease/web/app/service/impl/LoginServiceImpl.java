@@ -89,7 +89,7 @@ public class LoginServiceImpl implements LoginService {
         }
 
         String code = RandomUtil.randomNumbers(4); //生成4位数字验证码
-        String redisKey = buildCodeKey(normalizedPhone); //生成redisKey
+        String redisKey = buildRedisKey(normalizedPhone); //生成redisKey
 
         try {
             //将验证码键值对存入redis
@@ -127,7 +127,7 @@ public class LoginServiceImpl implements LoginService {
 
         //清理手机号和用户输入的验证码的前后空格
         String phone = normalizePhone(loginVo.getPhone());
-        String redisKey = buildCodeKey(phone);
+        String redisKey = buildRedisKey(phone);
         String attemptKey = buildAttemptKey(phone); //此时，这个attemptKey还没有value
 
         String redisCode = stringRedisTemplate.opsForValue().get(redisKey);
@@ -179,7 +179,12 @@ public class LoginServiceImpl implements LoginService {
         UserInfo userInfo = userInfoMapper.selectOne(queryWrapper);
 
         if(userInfo == null){
-            throw new LeaseException(ResultCodeEnum.APP_LOGIN_USER_NOT_EXIST);
+            //如果账户不存在，用注册账户代替抛出异常
+            UserInfo registerUser = new UserInfo();
+            registerUser.setPhone(phone);
+            registerUser.setStatus(BaseStatus.ENABLE);
+            registerUser.setNickname("新用户" + phone.substring(7));
+            userInfoMapper.insert(registerUser);
         }
 
         if(userInfo.getStatus() == BaseStatus.DISABLE){
@@ -227,7 +232,7 @@ public class LoginServiceImpl implements LoginService {
         return normalizedPhone;
     }
 
-    private String buildCodeKey(String phone) {
+    private String buildRedisKey(String phone) {
         return RedisConstant.APP_LOGIN_PREFIX + phone;
     }
 

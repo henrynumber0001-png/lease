@@ -6,6 +6,8 @@ import com.nocompanyname.lease.web.app.service.ProvinceInfoService;
 import com.nocompanyname.lease.web.app.mapper.ProvinceInfoMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
 * @author liubo
 * @description 针对表【province_info】的数据库操作Service实现
@@ -15,6 +17,10 @@ import org.springframework.stereotype.Service;
 public class ProvinceInfoServiceImpl extends ServiceImpl<ProvinceInfoMapper, ProvinceInfo>
     implements ProvinceInfoService{
 
+    @Override
+    public List<ProvinceInfo> listProvince() {
+        return this.list();
+    }
 }
 
 

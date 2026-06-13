@@ -2,12 +2,14 @@ package com.nocompanyname.lease.web.app.controller.room;
 
 
 import com.nocompanyname.lease.common.result.Result;
+import com.nocompanyname.lease.web.app.service.RoomInfoService;
 import com.nocompanyname.lease.web.app.vo.room.RoomDetailVo;
 import com.nocompanyname.lease.web.app.vo.room.RoomItemVo;
 import com.nocompanyname.lease.web.app.vo.room.RoomQueryVo;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,10 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/app/room")
 public class RoomController {
 
+    @Autowired
+    private RoomInfoService roomInfoService;
+
     @Operation(summary = "分页查询房间列表")
     @GetMapping("pageItem")
     public Result<IPage<RoomItemVo>> pageItem(@RequestParam long current, @RequestParam long size, RoomQueryVo queryVo) {
-        return Result.ok();
+        IPage<RoomItemVo> pageItem = roomInfoService.getPageItem(current, size, queryVo);
+        return Result.ok(pageItem);
     }
 
     @Operation(summary = "根据id获取房间的详细信息")

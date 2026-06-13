@@ -35,6 +35,7 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
+  type-aliases-package: com.nocompanyname.lease.web.app.vo,com.nocompanyname.lease.model.entity
 
 jwt:
   issuer: web-app

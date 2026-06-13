@@ -1,7 +1,10 @@
 package com.nocompanyname.lease.web.app.service;
 
+import com.nocompanyname.lease.model.entity.PaymentType;
 import com.nocompanyname.lease.model.entity.RoomPaymentType;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
 * @author liubo
@@ -9,4 +12,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2023-07-26 11:12:39
 */
 public interface RoomPaymentTypeService extends IService<RoomPaymentType> {
+    List<PaymentType> listByRoomId(Long id);
 }
