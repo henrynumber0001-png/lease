@@ -4,4 +4,55 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nocompanyname.lease.web.app.mapper.BrowsingHistoryMapper">
 
+    <!--
+    当前展示的是房间、公寓的“当前信息”，不是浏览时的信息。
+    如果房间后来修改租金，历史列表会显示新租金；
+    物理删除后房间相关字段会是 null。这是你暂不做快照方案的预期限制。
+    -->
+
+    <select id="getPage" resultMap="HistoryItemVoMap">
+        SELECT bh.id   AS browsing_history_id,
+               bh.user_id,
+               bh.room_id,
+               bh.browse_time,
+               ri.room_number,
+               ri.rent,
+               ai.name AS apartment_name,
+               ai.district_name,
+               ai.city_name,
+               ai.province_name
+        FROM browsing_history bh
+                 LEFT JOIN room_info ri
+                           ON bh.room_id = ri.id
+                 LEFT JOIN apartment_info ai
+                           ON ri.apartment_id = ai.id
+        WHERE bh.is_deleted = 0
+          AND bh.user_id = #{userId}
+        ORDER BY bh.browse_time DESC, bh.id DESC
+        <!--
+        查询条件里不写AND ri.is_release = 1 的原因是因为，房间可能在用户浏览时已发布，之后才被下架
+         如果增加：AND ri.is_release = 1，
+         6月1日浏览历史，在6月10日被下架后，就会被过滤掉，浏览历史中不会显示你曾经浏览过这一条，这与“展示所有浏览历史”的目标冲突。
+
+         而且就算写，你也应该把ri.is_release = 1写在 ON 后面，而不是WHERE后面，WHERE是针对拼接表的，会整体过滤掉一整行数据。
+         -->
+
+    </select>
+
+    <resultMap id="HistoryItemVoMap" type="com.nocompanyname.lease.web.app.vo.history.HistoryItemVo" autoMapping="true">
+        <id property="id" column="browsing_history_id"/>
+        <result property="apartmentName" column="apartment_name"/>
+        <collection property="roomGraphVoList" ofType="com.nocompanyname.lease.web.app.vo.graph.GraphVo" select="selectGraphVoByRoomId" column="room_id"/>
+    </resultMap>
+
+    <select id="selectGraphVoByRoomId" resultType="com.nocompanyname.lease.web.app.vo.graph.GraphVo">
+            SELECT
+                gi.name,
+                gi.url
+            FROM graph_info gi
+            WHERE gi.is_deleted = 0
+            AND gi.item_type = 2
+            AND gi.item_id = #{roomId}
+            ORDER BY gi.id
+    </select>
 </mapper>

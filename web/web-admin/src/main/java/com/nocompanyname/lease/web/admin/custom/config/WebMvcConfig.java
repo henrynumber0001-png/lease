@@ -39,6 +39,4 @@ public class WebMvcConfig implements WebMvcConfigurer {
 //        registry.addConverterFactory(new StringToBaseEnumConverterFactory());
     }
 
-
-
 }

@@ -149,4 +149,64 @@
         这也是为什么你会发现很多项目里，即使业务没有特别强调排序，也经常会看到 ORDER BY id，因为它更多是一种良好的工程习惯。
         -->
     </select>
+
+    <select id="selectMinRentByApartmentId" resultType="java.math.BigDecimal">
+        SELECT MIN(rent)
+        FROM room_info
+        WHERE apartment_id = #{apartmentId} AND is_deleted = 0
+    </select>
+
+
+    <select id="pageItemByApartmentId" resultMap="RoomItemVoMap">
+        SELECT ri.id AS room_id,
+               ri.room_number,
+               ri.rent,
+               ai.id AS apartment_id,
+               ai.name,
+               ai.introduction,
+               ai.district_id,
+               ai.district_name,
+               ai.city_id,
+               ai.city_name,
+               ai.province_id,
+               ai.province_name,
+               ai.address_detail,
+               ai.latitude,
+               ai.longitude,
+               ai.phone,
+               ai.is_release
+        FROM room_info ri
+                 LEFT JOIN apartment_info ai
+                           ON ri.apartment_id = ai.id AND ai.is_deleted = 0
+        WHERE ri.is_deleted = 0
+          AND ri.is_release = 1
+          AND ri.apartment_id = #{apartmentId}
+          AND ri.id NOT IN (SELECT la.room_id
+                            FROM lease_agreement la
+                            WHERE la.status IN (2, 5)
+                              AND la.room_id = ri.id
+                              AND la.is_deleted = 0)
+        ORDER BY ri.id
+    </select>
+
+    <!--
+       <select>：决定查哪些数据、如何筛选。
+       <resultMap>：决定查询结果如何装入 Java 对象 (嵌套查询结果从SQL映射到Java对象的规则）。
+
+       resultMap 只负责：
+        SQL 查询结果中的列，应该如何映射到 Java 对象。
+        它不关心：
+        1）SQL 使用什么 WHERE 条件
+        2）参数从哪里传入
+        3）是否分页
+        4）查询方法叫什么
+        5）使用什么排序方式
+        因此，一个 <resultMap> 可以被任意多个 <select> 复用。
+
+        对于：
+        IPage<RoomItemVo> getPageItem(Page<RoomItemVo> page, @Param("queryVo") RoomQueryVo queryVo);
+        IPage<RoomItemVo> pageItemByApartmentId(Page<RoomItemVo> page,@Param("apartmentId") Long apartmentId);
+        它们只有查询条件的不同，获得的查询结果的Java对象是完全一样的，因此完全可以复用一个 <resultMap>。
+        -->
+
 </mapper>

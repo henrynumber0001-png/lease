@@ -1,7 +1,11 @@
 package com.nocompanyname.lease.web.app.mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nocompanyname.lease.model.entity.BrowsingHistory;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nocompanyname.lease.web.app.vo.history.HistoryItemVo;
+import org.apache.ibatis.annotations.Param;
 
 
 /**
@@ -12,6 +16,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 */
 public interface BrowsingHistoryMapper extends BaseMapper<BrowsingHistory> {
 
+    IPage<HistoryItemVo> getPage(Page<HistoryItemVo> page,@Param("userId") Long userId);
 }
 
 

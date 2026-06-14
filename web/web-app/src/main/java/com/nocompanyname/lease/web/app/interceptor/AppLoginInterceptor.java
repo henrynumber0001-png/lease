@@ -41,4 +41,23 @@ public class AppLoginInterceptor implements HandlerInterceptor {
         }
         return true;
     }
+
+    /*
+    拦截器的作用是：
+    1.从请求头读取 JWT。
+    2.校验用户是否登录。
+    3.从 JWT 解析 userId。
+    4.把 userId 放入 LoginUserHolder。
+    5.允许请求继续进入 Controller。
+    如果验证失败并抛出异常：throw new LeaseException(...);
+     */
+
+    @Override
+    public void afterCompletion(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Object handler,
+            Exception ex) {
+        LoginUserHolder.remove();
+    }
 }
