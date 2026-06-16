@@ -7,5 +7,8 @@ import com.nocompanyname.lease.web.app.vo.history.HistoryItemVo;
 
 
 public interface BrowsingHistoryService extends IService<BrowsingHistory> {
+
     IPage<HistoryItemVo> getPage(long current, long size);
+
+    void saveHistory(Long roomId);
 }

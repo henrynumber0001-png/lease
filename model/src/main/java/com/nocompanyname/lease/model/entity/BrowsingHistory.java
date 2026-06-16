@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -32,6 +33,6 @@ public class BrowsingHistory extends BaseEntity {
     @Schema(description = "浏览时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField("browse_time")
-    private Date browseTime;
+    private LocalDateTime browseTime;
 
 }

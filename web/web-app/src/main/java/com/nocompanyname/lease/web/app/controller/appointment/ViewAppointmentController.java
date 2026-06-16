@@ -3,10 +3,12 @@ package com.nocompanyname.lease.web.app.controller.appointment;
 
 import com.nocompanyname.lease.common.result.Result;
 import com.nocompanyname.lease.model.entity.ViewAppointment;
+import com.nocompanyname.lease.web.app.service.ViewAppointmentService;
 import com.nocompanyname.lease.web.app.vo.appointment.AppointmentDetailVo;
 import com.nocompanyname.lease.web.app.vo.appointment.AppointmentItemVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,16 +18,21 @@ import java.util.List;
 @RequestMapping("/app/appointment")
 public class ViewAppointmentController {
 
+    @Autowired
+    private ViewAppointmentService viewAppointmentService;
+
     @Operation(summary = "保存或更新看房预约")
     @PostMapping("/saveOrUpdate")
     public Result saveOrUpdate(@RequestBody ViewAppointment viewAppointment) {
+        viewAppointmentService.saveOrUpdate(viewAppointment);
         return Result.ok();
     }
 
     @Operation(summary = "查询个人预约看房列表")
     @GetMapping("listItem")
     public Result<List<AppointmentItemVo>> listItem() {
-        return Result.ok();
+        List<AppointmentItemVo> list = viewAppointmentService.listItem();
+        return Result.ok(list);
     }
 
     @GetMapping("getDetailById")

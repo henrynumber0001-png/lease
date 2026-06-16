@@ -8,10 +8,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Tag(name = "浏览历史管理")
@@ -26,5 +23,12 @@ public class BrowsingHistoryController {
     public Result<IPage<HistoryItemVo>> page(@RequestParam long current, @RequestParam long size) {
         IPage<HistoryItemVo> page = browsingHistoryService.getPage(current, size);
         return Result.ok(page);
+    }
+
+    @Operation(summary = "保存浏览历史")
+    @PostMapping("saveHistory")
+    public Result<Void> saveHistory(@RequestParam Long roomId) {
+        browsingHistoryService.saveHistory(roomId);
+        return Result.ok();
     }
 }
