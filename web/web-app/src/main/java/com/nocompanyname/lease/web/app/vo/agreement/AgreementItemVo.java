@@ -28,7 +28,7 @@ public class AgreementItemVo {
     private String roomNumber;
 
     @Schema(description = "租约状态")
-    private LeaseStatus leaseStatus;
+    private LeaseStatus status;
 
     @Schema(description = "租约开始日期")
     @JsonFormat(pattern = "yyyy-MM-dd")

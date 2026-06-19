@@ -9,6 +9,7 @@ import com.nocompanyname.lease.web.app.vo.room.RoomQueryVo;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 public interface RoomInfoMapper extends BaseMapper<RoomInfo> {

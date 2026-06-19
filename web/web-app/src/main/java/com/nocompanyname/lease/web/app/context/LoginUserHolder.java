@@ -14,6 +14,8 @@ public final class LoginUserHolder {
     //为什么用 ThreadLocal?
     //ThreadLocal 是线程安全的，每个线程都有自己的副本，不会相互影响，适合在多线程环境下使用，避免了线程安全问题。
 
+    private static final ThreadLocal<String> USER_PHONE_HOLDER = new ThreadLocal<>();
+
     private LoginUserHolder() {
     }
     //private 构造方法：表示 不允许别人 new 这个类
@@ -45,4 +47,16 @@ public final class LoginUserHolder {
     线程1又处理用户B
     用户B可能读到 userId = 1001
      */
+
+    public static void setUserPhone(String phone){
+        USER_PHONE_HOLDER.set(phone);
+    }
+
+    public static String getUserPhone(){
+        return USER_PHONE_HOLDER.get();
+    }
+
+    public static void removeUserPhone(){
+        USER_PHONE_HOLDER.remove();
+    }
 }

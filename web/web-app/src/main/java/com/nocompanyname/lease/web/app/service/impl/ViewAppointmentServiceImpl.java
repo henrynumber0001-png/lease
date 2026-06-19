@@ -3,22 +3,23 @@ package com.nocompanyname.lease.web.app.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nocompanyname.lease.common.exception.LeaseException;
 import com.nocompanyname.lease.common.result.ResultCodeEnum;
-import com.nocompanyname.lease.model.entity.ApartmentInfo;
-import com.nocompanyname.lease.model.entity.GraphInfo;
-import com.nocompanyname.lease.model.entity.ViewAppointment;
+import com.nocompanyname.lease.model.entity.*;
 import com.nocompanyname.lease.model.enums.ItemType;
 import com.nocompanyname.lease.web.app.context.LoginUserHolder;
+import com.nocompanyname.lease.web.app.mapper.RoomInfoMapper;
 import com.nocompanyname.lease.web.app.mapper.ViewAppointmentMapper;
-import com.nocompanyname.lease.web.app.service.ApartmentInfoService;
-import com.nocompanyname.lease.web.app.service.GraphInfoService;
-import com.nocompanyname.lease.web.app.service.ViewAppointmentService;
+import com.nocompanyname.lease.web.app.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nocompanyname.lease.web.app.vo.apartment.ApartmentItemVo;
+import com.nocompanyname.lease.web.app.vo.appointment.AppointmentDetailVo;
 import com.nocompanyname.lease.web.app.vo.appointment.AppointmentItemVo;
 import com.nocompanyname.lease.web.app.vo.graph.GraphVo;
 import kotlin.jvm.internal.Lambda;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,11 +30,20 @@ public class ViewAppointmentServiceImpl extends ServiceImpl<ViewAppointmentMappe
 
     private final ApartmentInfoService apartmentInfoService;
     private final GraphInfoService graphInfoService;
+    private final ApartmentLabelService apartmentLabelService;
+    private final LabelInfoService labelInfoService;
+    private final RoomInfoService roomInfoService;
 
-    public ViewAppointmentServiceImpl(ApartmentInfoService apartmentInfoService, GraphInfoService graphInfoService) {
+    public ViewAppointmentServiceImpl(ApartmentInfoService apartmentInfoService, GraphInfoService graphInfoService, ApartmentLabelService apartmentLabelService, LabelInfoService labelInfoService, RoomInfoService roomInfoService) {
         this.apartmentInfoService = apartmentInfoService;
         this.graphInfoService = graphInfoService;
+        this.apartmentLabelService = apartmentLabelService;
+        this.labelInfoService = labelInfoService;
+        this.roomInfoService = roomInfoService;
     }
+
+    @Autowired
+    private RoomInfoMapper roomInfoMapper;
 
     @Override
     public List<AppointmentItemVo> listItem() {
@@ -123,6 +133,73 @@ public class ViewAppointmentServiceImpl extends ServiceImpl<ViewAppointmentMappe
 
         return appointmentItemVoList;
 
+    }
+
+    @Override
+    public AppointmentDetailVo getDetailById(Long id) {
+        if (id == null) {
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
+        }
+
+        Long userId = LoginUserHolder.getUserId();
+        if (userId == null) {
+            throw new LeaseException(ResultCodeEnum.APP_LOGIN_AUTH);
+        }
+        LambdaQueryWrapper<ViewAppointment> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ViewAppointment::getUserId, userId)
+                .eq(ViewAppointment::getId, id);
+        ViewAppointment viewAppointment = this.getOne(queryWrapper);
+        //不要直接用单条件验证: ViewAppointment viewAppointment = this.getById(id);
+        //因为一旦预约id被他人获取，就可以直接查询；
+
+        if (viewAppointment == null) {
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
+        }
+
+        AppointmentDetailVo appointmentDetailVo = new AppointmentDetailVo();
+        BeanUtils.copyProperties(viewAppointment, appointmentDetailVo);
+
+        Long apartmentId = viewAppointment.getApartmentId();
+        ApartmentInfo apartmentInfo = apartmentInfoService.getById(apartmentId);
+        //所有的条件查询，后面都要跟一个非空判断，因为很可能查不到数据
+        if (apartmentInfo == null) {
+            throw new LeaseException(ResultCodeEnum.DATA_ERROR);
+        }
+
+        ApartmentItemVo apartmentItemVo = new ApartmentItemVo();
+        BeanUtils.copyProperties(apartmentInfo, apartmentItemVo);
+
+        LambdaQueryWrapper<ApartmentLabel> labelQueryWrapper = new LambdaQueryWrapper<>();
+        labelQueryWrapper.eq(ApartmentLabel::getApartmentId, apartmentId);
+
+        List<ApartmentLabel> apartmentLabels = apartmentLabelService.list(labelQueryWrapper);
+        List<Long> labelIds = apartmentLabels.stream().map(ApartmentLabel::getLabelId).collect(Collectors.toList());
+
+        List<LabelInfo> labelInfoList = new ArrayList<>();
+        if (!labelIds.isEmpty()) {
+            labelInfoList = labelInfoService.listByIds(labelIds);
+        }
+        apartmentItemVo.setLabelInfoList(labelInfoList);
+
+        LambdaQueryWrapper<GraphInfo> graphInfoQueryWrapper = new LambdaQueryWrapper<>();
+        graphInfoQueryWrapper.eq(GraphInfo::getItemId, apartmentId)
+                .eq(GraphInfo::getItemType, ItemType.APARTMENT);
+
+        List<GraphInfo> graphInfoList = graphInfoService.list(graphInfoQueryWrapper);
+        List<GraphVo> graphVoList = new ArrayList<>();
+        graphInfoList.forEach(graphInfo -> {
+            GraphVo graphVo = new GraphVo();
+            graphVo.setName(graphInfo.getName());
+            graphVo.setUrl(graphInfo.getUrl());
+            graphVoList.add(graphVo);
+        });
+        apartmentItemVo.setGraphVoList(graphVoList);
+
+        BigDecimal minRent = roomInfoMapper.selectMinRentByApartmentId(apartmentId);
+        apartmentItemVo.setMinRent(minRent);
+
+        appointmentDetailVo.setApartmentItemVo(apartmentItemVo);
+        return appointmentDetailVo;
     }
 }
 

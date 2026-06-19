@@ -33,7 +33,9 @@ public class AppLoginInterceptor implements HandlerInterceptor {
 
         try{
             Long userId = jwtUtil.getUserId(token);
+            String phone =jwtUtil.getUsername(token); //比 web.admin 增加了 获取 username（也就是phone）的指令
             LoginUserHolder.setUserId(userId);
+            LoginUserHolder.setUserPhone(phone); //比 web.admin 增加了 将 username（也就是phone）传入到 ThreadLocal 的指令，因为需要在后续的业务逻辑中使用phone
         }catch (ExpiredJwtException e){//如果token过期，抛异常
             throw new LeaseException(ResultCodeEnum.TOKEN_EXPIRED);
         } catch(JwtException | IllegalArgumentException e){ //其他token异常（被篡改、格式错误、签名验证失败、token未生效，token是空字符串 等）
@@ -59,5 +61,6 @@ public class AppLoginInterceptor implements HandlerInterceptor {
             Object handler,
             Exception ex) {
         LoginUserHolder.remove();
+        LoginUserHolder.removeUserPhone();
     }
 }

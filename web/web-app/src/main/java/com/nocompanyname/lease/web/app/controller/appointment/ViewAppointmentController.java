@@ -36,9 +36,10 @@ public class ViewAppointmentController {
     }
 
     @GetMapping("getDetailById")
-    @Operation(summary = "根据ID查询预约详情信息")
+    @Operation(summary = "根据预约看房信息表ID，查询预约详情信息")
     public Result<AppointmentDetailVo> getDetailById(Long id) {
-        return Result.ok();
+        AppointmentDetailVo appointmentDetailVo = viewAppointmentService.getDetailById(id);
+        return Result.ok(appointmentDetailVo);
     }
 
 }
