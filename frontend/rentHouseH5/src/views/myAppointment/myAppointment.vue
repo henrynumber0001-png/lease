@@ -50,7 +50,7 @@
       </van-card>
     </div>
 
-    <van-empty v-if="appointmentList?.length <= 0" description="搜索不到" />
+    <van-empty v-if="(appointmentList?.length ?? 0) <= 0" description="搜索不到" />
   </van-skeleton>
 </template>
 <script setup lang="ts">

@@ -172,7 +172,7 @@
                     title="支付方式"
                     :columns="paymentTypeColumns"
                     @confirm="onConfirmPaymentType"
-                    @cancel="showPickerLeaseTerm = false"
+                    @cancel="showPickerPaymentType = false"
                   />
                 </van-popup>
               </van-col>
@@ -220,8 +220,9 @@ import { showToast } from "vant";
 import {
   getAgreementDetailById,
   getPaymentListByRoomId,
+  renewAgreement,
   getTermListByRoomId,
-  saveOrUpdateAgreement
+  updateAgreementStatus
 } from "@/api/search";
 import { AgreementSource, AgreementStatus } from "@/enums/constEnums";
 const route = useRoute();
@@ -392,12 +393,15 @@ const getAgreementDetailHandle = async () => {
   // 单独支付方式相关
   paymentTypeInfo.value.text = data.paymentTypeName as string;
   paymentTypeInfo.value.value = data.paymentTypeId as string;
-  //   如果是续约，允许修改，
-  if (isAllowEdit.value) {
+  //   如果是新增续约，允许修改续约租期和支付方式
+  if (isRenew.value && isAddRenew.value) {
     // 重新计算起止日期
-    // 结束日期变成开始日期
-    agreementDetailInfo.value.leaseStartDate =
-      agreementDetailInfo.value.leaseEndDate;
+    // 新租约开始日期必须晚于原租约结束日期
+    agreementDetailInfo.value.leaseStartDate = dayjs(
+      agreementDetailInfo.value.leaseEndDate
+    )
+      .add(1, "day")
+      .format("YYYY-MM-DD");
     // 结束日期变成开始日期+租期
     agreementDetailInfo.value.leaseEndDate = dayjs(
       agreementDetailInfo.value.leaseStartDate
@@ -409,11 +413,6 @@ const getAgreementDetailHandle = async () => {
     //   重置租约来源
     agreementDetailInfo.value.sourceType = AgreementSource.RENEW;
   }
-  //   如果是新增的续约,重置id为空
-  isAddRenew.value && (agreementDetailInfo.value.id = "");
-  //   如果是确认签约，修改状态为已签约，等待确认
-  isConfirmAgreement.value &&
-    (agreementDetailInfo.value.status = AgreementStatus.SIGNED);
 };
 // 更正租期和支付方式
 const correctLeaseTermAndPaymentType = () => {
@@ -454,25 +453,27 @@ const goRoomDetail = () => {
 };
 // 续约,修改
 const submitHandle = async () => {
-  console.log("确认签约");
   try {
+    if (isConfirmAgreement.value) {
+      await updateAgreementStatus(
+        agreementDetailInfo.value.id as string,
+        AgreementStatus.SIGNED
+      );
+      showToast({ type: "success", message: "操作成功" });
+      router.back();
+      return;
+    }
+
     // 租期时长不能小于支付方式月份长度
     let leaseTermMonthCount =
       leaseTermList.value.find(
         item => item.id === agreementDetailInfo.value.leaseTermId
       )?.monthCount || 0;
 
-    console.log(leaseTermList.value);
-    console.log(agreementDetailInfo.value);
-    console.log("=============================");
-    console.log("租期长度：" + leaseTermMonthCount);
-
     let paymentTypeMonthCount =
       paymentTypeList.value.find(
         item => item.id === agreementDetailInfo.value.paymentTypeId
       )?.payMonthCount || 0;
-
-    console.log("支付月份长度：" + paymentTypeMonthCount);
 
     if (+leaseTermMonthCount < +paymentTypeMonthCount) {
       showToast({
@@ -482,7 +483,14 @@ const submitHandle = async () => {
       return;
     }
 
-    await saveOrUpdateAgreement(agreementDetailInfo.value);
+    await renewAgreement({
+      oldAgreementId: route.query.id as string,
+      leaseStartDate: agreementDetailInfo.value.leaseStartDate as string,
+      leaseEndDate: agreementDetailInfo.value.leaseEndDate as string,
+      leaseTermId: agreementDetailInfo.value.leaseTermId as string,
+      paymentTypeId: agreementDetailInfo.value.paymentTypeId as string,
+      additionalInfo: agreementDetailInfo.value.additionalInfo
+    });
     showToast({ type: "success", message: "操作成功" });
     router.back();
   } catch (error) {

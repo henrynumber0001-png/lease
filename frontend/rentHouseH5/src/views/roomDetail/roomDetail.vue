@@ -69,7 +69,7 @@
             <!--          占位修饰-->
             <van-col
               class="my-[3px]"
-              v-if="roomDetailInfo.attrValueVoList?.length % 2 !== 0"
+              v-if="(roomDetailInfo.attrValueVoList?.length ?? 0) % 2 !== 0"
               span="12"
             >
             </van-col>

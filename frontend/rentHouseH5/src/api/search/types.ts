@@ -201,7 +201,7 @@ export interface AgreementItemInterface {
   }[];
   apartmentName: string;
   roomNumber: number | string;
-  leaseStatus: number | string;
+  status: AgreementStatus;
   leaseStartDate: string;
   leaseEndDate: string;
   rent: number | string;
@@ -238,6 +238,15 @@ export interface AgreementQueryInterface {
   sourceType: AgreementSource;
   // additionalInfo	备注信息
   additionalInfo: string;
+}
+// 续约请求接口
+export interface AgreementRenewInterface {
+  oldAgreementId: number | string;
+  leaseStartDate: string;
+  leaseEndDate: string;
+  leaseTermId: number | string;
+  paymentTypeId: number | string;
+  additionalInfo?: string;
 }
 // 租约详情
 export interface AgreementDetailInterface extends AgreementQueryInterface {

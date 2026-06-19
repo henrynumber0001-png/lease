@@ -42,45 +42,45 @@
         <!--      tags-->
         <template #tags>
           <van-tag
-            v-if="item.leaseStatus === AgreementStatus.WAITING"
+            v-if="item.status === AgreementStatus.WAITING"
             class="mt-[5px]"
             type="primary"
             size="medium"
             >{{
-              getLabelByValue(AgreementStatusMap, item.leaseStatus)
+              getLabelByValue(AgreementStatusMap, item.status)
             }}</van-tag
           >
           <van-tag
             v-else-if="
-              item.leaseStatus === AgreementStatus.RENEW_TO_BE_CONFIRMED
+              item.status === AgreementStatus.RENEW_TO_BE_CONFIRMED
             "
             class="mt-[5px]"
             type="primary"
             size="medium"
             >{{
-              getLabelByValue(AgreementStatusMap, item.leaseStatus)
+              getLabelByValue(AgreementStatusMap, item.status)
             }}</van-tag
           >
           <van-tag
-            v-else-if="item.leaseStatus === AgreementStatus.SIGNED"
+            v-else-if="item.status === AgreementStatus.SIGNED"
             class="mt-[5px]"
             type="success"
             size="medium"
             >{{
-              getLabelByValue(AgreementStatusMap, item.leaseStatus)
+              getLabelByValue(AgreementStatusMap, item.status)
             }}</van-tag
           >
           <van-tag
-            v-else-if="item.leaseStatus === AgreementStatus.TO_BE_CONFIRMED"
+            v-else-if="item.status === AgreementStatus.TO_BE_CONFIRMED"
             class="mt-[5px]"
             type="danger"
             size="medium"
             >{{
-              getLabelByValue(AgreementStatusMap, item.leaseStatus)
+              getLabelByValue(AgreementStatusMap, item.status)
             }}</van-tag
           >
           <van-tag v-else class="mt-[5px]" type="default" size="medium">{{
-            getLabelByValue(AgreementStatusMap, item.leaseStatus)
+            getLabelByValue(AgreementStatusMap, item.status)
           }}</van-tag>
         </template>
         <!--      price-->
@@ -94,7 +94,7 @@
         <template #footer>
           <div class="absolute bottom-[7px] right-[15px]" @click.stop>
             <van-button
-              v-if="item.leaseStatus === AgreementStatus.SIGNED"
+              v-if="item.status === AgreementStatus.SIGNED"
               size="mini"
               plain
               type="primary"
@@ -108,31 +108,23 @@
               >续约</van-button
             >
             <van-button
-              v-if="item.leaseStatus === AgreementStatus.RENEW_TO_BE_CONFIRMED"
+              v-if="item.status === AgreementStatus.RENEW_TO_BE_CONFIRMED"
               size="mini"
               type="primary"
               plain
-              @click="
-                goAgreementDetail(item, {
-                  isRenew: true,
-                  isEdit: true,
-                  isAdd: false
-                })
-              "
-              >修改</van-button
+              @click="goAgreementDetail(item)"
+              >查看</van-button
             >
             <van-button
-              v-if="item.leaseStatus === AgreementStatus.WAITING"
+              v-if="item.status === AgreementStatus.WAITING"
               size="mini"
               type="primary"
               plain
-              @click="
-                goAgreementDetail(item, { isEdit: true, isConfirm: true })
-              "
+              @click="goAgreementDetail(item, { isConfirm: true })"
               >确认</van-button
             >
             <van-button
-              v-if="item.leaseStatus === AgreementStatus.SIGNED"
+              v-if="item.status === AgreementStatus.SIGNED"
               size="mini"
               plain
               type="danger"
@@ -144,14 +136,14 @@
       </van-card>
     </div>
 
-    <van-empty v-if="agreementList?.length <= 0" description="搜索不到" />
+    <van-empty v-if="(agreementList?.length ?? 0) <= 0" description="搜索不到" />
   </van-skeleton>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import type { AgreementItemInterface } from "@/api/search/types";
-import { getMyAgreementList, saveOrUpdateAgreement } from "@/api/search";
+import { getMyAgreementList, updateAgreementStatus } from "@/api/search";
 import { showConfirmDialog, showToast } from "vant";
 import {
   AgreementSourceMap,
@@ -187,17 +179,14 @@ const rentRefundHandle = (item: AgreementItemInterface) => {
     confirmButtonText: "确定"
   })
     .then(async () => {
-      await saveOrUpdateAgreement({
-        id: item.id,
-        status: AgreementStatus.TO_BE_CONFIRMED
-      });
+      await updateAgreementStatus(item.id, AgreementStatus.TO_BE_CONFIRMED);
       //   操作成功
       showToast({
         type: "success",
         message: "操作成功"
       });
       //   修改当前租约状态
-      item.leaseStatus = AgreementStatus.TO_BE_CONFIRMED;
+      item.status = AgreementStatus.TO_BE_CONFIRMED;
     })
     .catch(() => {});
 };

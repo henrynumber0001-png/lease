@@ -2,7 +2,7 @@ import http from "@/utils/http";
 import type {
   AgreementDetailInterface,
   AgreementItemInterface,
-  AgreementQueryInterface,
+  AgreementRenewInterface,
   ApartmentInterface,
   AppointmentInfoInterface,
   AppointmentItemInterface,
@@ -16,6 +16,7 @@ import type {
   TermInfoInterface
 } from "@/api/search/types";
 import type { PageRes, ReqPage } from "@/api/types";
+import { AgreementStatus } from "@/enums/constEnums";
 /**
  * @description 分页查询房间列表
  * @param params
@@ -127,13 +128,29 @@ export function getAgreementDetailById(id: number | string) {
   );
 }
 
+const agreementStatusRequestMap: Partial<Record<AgreementStatus, string>> = {
+  [AgreementStatus.SIGNED]: "SIGNED",
+  [AgreementStatus.TO_BE_CONFIRMED]: "WITHDRAWING"
+};
+
 /**
- * @description 保存新租约
+ * @description 根据租约id更新租约状态
  */
-export function saveOrUpdateAgreement(
-  params: Partial<AgreementQueryInterface>
+export function updateAgreementStatus(
+  id: number | string,
+  leaseStatus: AgreementStatus
 ) {
-  return http.post(`/app/agreement/saveOrUpdate`, params);
+  const statusName = agreementStatusRequestMap[leaseStatus];
+  return http.post(
+    `/app/agreement/updateStatusById?id=${id}&leaseStatus=${statusName}`
+  );
+}
+
+/**
+ * @description 申请续约
+ */
+export function renewAgreement(params: AgreementRenewInterface) {
+  return http.post(`/app/agreement/renew`, params);
 }
 
 /**

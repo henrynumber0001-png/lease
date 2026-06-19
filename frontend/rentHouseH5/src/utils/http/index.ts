@@ -29,7 +29,7 @@ service.interceptors.request.use(
     }
     const token = getToken();
     if (token) {
-      config.headers["access-token"] = token;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

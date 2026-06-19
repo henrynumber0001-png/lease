@@ -21,7 +21,7 @@
               :style="{ background: item.color }"
               class="flex flex-col justify-center items-center h-[12vw] w-[12vw] rounded-xl py-[3px]"
             >
-              <van-icon :name="item.icon" :badge="item.badge" size="25" />
+              <van-icon :name="item.icon" :badge="item.badge ?? undefined" size="25" />
             </div>
             <span class="mt-[2px]">{{ item.name }}</span>
           </div>
