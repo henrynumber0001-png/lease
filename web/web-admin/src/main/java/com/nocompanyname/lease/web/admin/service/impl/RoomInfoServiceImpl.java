@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nocompanyname.lease.common.cache.CacheNames;
 import com.nocompanyname.lease.common.exception.LeaseException;
 import com.nocompanyname.lease.common.result.ResultCodeEnum;
 import com.nocompanyname.lease.model.entity.*;
@@ -21,6 +22,8 @@ import com.nocompanyname.lease.web.admin.vo.room.RoomSubmitVo;
 import io.minio.Utils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +79,14 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
     @Autowired
     private LeaseTermService leaseTermService;
 
+    //当本方法执行成功后，删除 Redis 中指定的缓存数据。
+    //当方法执行成功后，如果 roomSubmitVo.id 不为空，则删除缓存 admin:room:detail::{id}，避免用户下次查询到旧数据。（:: 是 Spring Cache 默认用来拼接 cacheName 和 key 的分隔符）
+    //用方法参数算出缓存 key，然后删除这个 key 对应的整组缓存记录，也就是 key-value 键值对。
+    @CacheEvict(
+            cacheNames = CacheNames.ADMIN_ROOM_DETAIL, //指定缓存名称
+            key = "#roomSubmitVo.id", // SpEL（Spring Expression Language），取参数对象的id属性作为key的value
+            condition = "#roomSubmitVo.id != null" //满足条件才删除缓存（因为新增房间时，没有id，Spring 不知道该删除哪个缓存
+    )
     @Transactional
     @Override
     public void saveOrUpdateByRoom(RoomSubmitVo roomSubmitVo) {
@@ -257,6 +268,18 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
     }
 
+    //@Cacheable 的语义是：缓存这个方法的返回值。
+    @Cacheable(cacheNames = CacheNames.ADMIN_ROOM_DETAIL,
+    key = "#id", //在Spring Cache中，# = 方法参数（90%场景下）
+    unless = "#result == null")
+    /*
+    Spring Cache 本质上是基于 Spring AOP 的，
+    所以有个规则：只有“从外部 Bean 调用这个方法”时，缓存注解才会生效。
+
+    也就是 @Cacheable 标注的方法，如果在本类中其他方法中被调用，是无法使用 @Cacheable注解的。
+    因为 @Cacheable 是AOP，是动态代理机制，必须要在类的外部被调用方法，才能让 @Cacheable 生效。
+     */
+
     @Override
     public RoomDetailVo getDetailById(Long id) {
         if (id == null) { //不加条件判断，getById(id)可能会报空指针异常
@@ -426,6 +449,7 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         return roomDetailVo;
     }
 
+    @CacheEvict(cacheNames = CacheNames.ADMIN_ROOM_DETAIL, key = "#id") //因为 id == null 是非法参数，不是正常业务分支，因此可以不写 condition = "#id != null"
     @Override
     public void removeByRoomId(Long id) {
         if (id == null) {
@@ -476,10 +500,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         LambdaQueryWrapper<RoomLeaseTerm> roomLeaseTermQueryWrapper = new LambdaQueryWrapper<>();
         roomLeaseTermQueryWrapper.eq(RoomLeaseTerm::getRoomId, id);
         roomLeaseTermService.remove(roomLeaseTermQueryWrapper);
-
-
     }
 
+    @CacheEvict(cacheNames = CacheNames.ADMIN_ROOM_DETAIL, key = "#id")
     @Override
     public void updateReleaseStatusById(Long id, ReleaseStatus status) {
 
