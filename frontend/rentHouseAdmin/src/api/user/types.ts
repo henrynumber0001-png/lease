@@ -6,6 +6,10 @@ export interface LoginData {
   captchaCode: string
 }
 
+export interface RegisterData extends LoginData {
+  passwordAgain: string
+}
+
 export interface ValidateUCodeData {
   image: string
   key: string

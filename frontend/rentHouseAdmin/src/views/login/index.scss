@@ -27,7 +27,7 @@
     position: relative;
     max-width: 100%;
     padding: 4.5vh;
-    margin: calc(50vh - 277.5px) 5vw 5vw;
+    margin: max(24px, calc(50vh - 330px)) 5vw 5vw;
     overflow: hidden;
     background: url('@/assets/images/login_form.png');
     background-size: 100% 100%;
@@ -42,6 +42,11 @@
       &:hover {
         opacity: 0.9;
       }
+    }
+
+    .mode-btn {
+      width: 100%;
+      color: var(--el-color-white);
     }
   }
 

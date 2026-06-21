@@ -20,9 +20,13 @@
           class="login-form"
         >
           <div class="form-header">
-            <div class="title">hello !</div>
+            <div class="title">{{ isRegisterMode ? 'register' : 'hello' }} !</div>
             <div class="title-tips">
-              欢迎来到{{ getEnvByName('VITE_APP_TITLE') }}！
+              {{
+                isRegisterMode
+                  ? `注册${getEnvByName('VITE_APP_TITLE')}管理员账号`
+                  : `欢迎来到${getEnvByName('VITE_APP_TITLE')}！`
+              }}
             </div>
           </div>
           <el-form-item prop="username">
@@ -41,6 +45,16 @@
               :prefix-icon="Lock"
               autocomplete="off"
               placeholder="请输入密码"
+            />
+          </el-form-item>
+          <el-form-item v-if="isRegisterMode" prop="passwordAgain">
+            <el-input
+              v-model.trim="ruleForm.passwordAgain"
+              type="password"
+              show-password
+              :prefix-icon="Lock"
+              autocomplete="off"
+              placeholder="请再次输入密码"
             />
           </el-form-item>
           <el-form-item prop="captchaCode">
@@ -71,7 +85,17 @@
               :loading="loading"
               @click="submitForm(ruleFormRef)"
             >
-              登陆
+              {{ isRegisterMode ? '注册' : '登陆' }}
+            </el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-button
+              class="mode-btn"
+              text
+              :disabled="loading"
+              @click="toggleMode"
+            >
+              {{ isRegisterMode ? '已有账号，返回登录' : '没有账号，注册管理员' }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -89,7 +113,7 @@ import { User, Lock } from '@element-plus/icons-vue'
 import { ElNotification } from 'element-plus'
 import { HOME_URL } from '@/config/config'
 import { timeFix } from '@/utils/index'
-import { getCode, getUserInfo, login } from '@/api/user'
+import { getCode, getUserInfo, login, register } from '@/api/user'
 import { getEnvByName } from '@/utils/getEnv'
 const router = useRouter()
 const route = useRoute()
@@ -98,10 +122,12 @@ const userStore = useUserStore()
 const ruleForm = reactive({
   username: 'user',
   password: '123456',
+  passwordAgain: '',
   captchaKey: '',
   captchaCode: '',
 })
 const loading = ref(false)
+const isRegisterMode = ref(false)
 const validateUsername = (rule: any, value: string, callback: any) => {
   if (value === '') {
     callback(new Error('用户名不能为空'))
@@ -121,6 +147,17 @@ const validatePassword = (rule: any, value: string, callback: any) => {
     callback()
   }
 }
+const validatePasswordAgain = (rule: any, value: string, callback: any) => {
+  if (!isRegisterMode.value) {
+    callback()
+  } else if (value === '') {
+    callback(new Error('请再次输入密码'))
+  } else if (value !== ruleForm.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
 const validateCaptchaCode = (rule: any, value: string, callback: any) => {
   if (value === '') {
     callback(new Error('验证码不能为空'))
@@ -131,6 +168,7 @@ const validateCaptchaCode = (rule: any, value: string, callback: any) => {
 const rules = reactive({
   username: [{ required: true, validator: validateUsername }],
   password: [{ required: true, validator: validatePassword }],
+  passwordAgain: [{ required: true, validator: validatePasswordAgain }],
   captchaCode: [{ required: true, validator: validateCaptchaCode }],
 })
 // 验证码数据
@@ -148,13 +186,22 @@ const getCaptcha = async () => {
     console.log(error)
   }
 }
+const toggleMode = async () => {
+  isRegisterMode.value = !isRegisterMode.value
+  ruleForm.passwordAgain = ''
+  ruleForm.captchaCode = ''
+  ruleFormRef.value?.clearValidate()
+  await getCaptcha()
+}
 const submitForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
   formEl.validate(async (valid) => {
     if (!valid) return
     try {
       loading.value = true
-      const { data } = await login(ruleForm)
+      const { data } = isRegisterMode.value
+        ? await register(ruleForm)
+        : await login(ruleForm)
       userStore.setToken(data)
       router.replace((route.query.redirect as string) || HOME_URL)
 
@@ -163,7 +210,7 @@ const submitForm = (formEl: FormInstance | undefined) => {
 
       ElNotification({
         title: `hi,${timeFix()}!`,
-        message: `欢迎回来`,
+        message: isRegisterMode.value ? '注册成功' : '欢迎回来',
         type: 'success',
       })
     } finally {

@@ -3,7 +3,7 @@
     v-bind="$attrs"
     :action="UPLOAD_IMG_URL"
     :on-preview="handlePictureCardPreview"
-    :headers="{ 'access-token': useUserStore().token }"
+    :headers="{ Authorization: `Bearer ${useUserStore().token}` }"
   >
     <el-icon>
       <Plus />

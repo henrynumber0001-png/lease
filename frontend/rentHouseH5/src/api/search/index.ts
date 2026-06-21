@@ -80,7 +80,7 @@ export function getApartmentDetailById(id: number | string) {
  * @param params
  */
 export function getRoomListByApartmentId(
-  params: ReqPage & { id: number | string }
+  params: ReqPage & { apartmentId: number | string }
 ) {
   return http.get<PageRes<RoomInterface>>(
     `/app/room/pageItemByApartmentId`,

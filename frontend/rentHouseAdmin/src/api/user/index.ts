@@ -7,7 +7,7 @@
  */
 import http from '@/utils/http'
 // import http from '@/utils/http/httpMock'
-import type { LoginData, UserInfo } from './types'
+import type { LoginData, RegisterData, UserInfo } from './types'
 import { ValidateUCodeData } from './types'
 
 /**
@@ -15,6 +15,12 @@ import { ValidateUCodeData } from './types'
  */
 export function login(data: LoginData) {
   return http.post<string>('/admin/login', data)
+}
+/**
+ * 注册
+ */
+export function register(data: RegisterData) {
+  return http.post<string>('/admin/register', data)
 }
 /**
  * 获取验证码

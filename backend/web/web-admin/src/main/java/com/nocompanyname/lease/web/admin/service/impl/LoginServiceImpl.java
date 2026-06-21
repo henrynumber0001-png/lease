@@ -7,11 +7,14 @@ import com.nocompanyname.lease.common.result.ResultCodeEnum;
 import com.nocompanyname.lease.common.utils.JwtUtil;
 import com.nocompanyname.lease.model.entity.SystemUser;
 import com.nocompanyname.lease.model.enums.BaseStatus;
+import com.nocompanyname.lease.model.enums.SystemUserType;
 import com.nocompanyname.lease.web.admin.custom.context.LoginUserHolder;
 import com.nocompanyname.lease.web.admin.mapper.SystemUserMapper;
 import com.nocompanyname.lease.web.admin.service.LoginService;
+import com.nocompanyname.lease.web.admin.service.SystemUserService;
 import com.nocompanyname.lease.web.admin.vo.login.CaptchaVo;
 import com.nocompanyname.lease.web.admin.vo.login.LoginVo;
+import com.nocompanyname.lease.web.admin.vo.login.RegisterVo;
 import com.nocompanyname.lease.web.admin.vo.system.user.SystemUserInfoVo;
 import com.wf.captcha.SpecCaptcha;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +40,9 @@ public class LoginServiceImpl implements LoginService {
     private JwtUtil jwtUtil;
 
     private final StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private SystemUserService systemUserService;
+
     //构造方法注入StringRedisTemplate
     public LoginServiceImpl(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
@@ -152,7 +158,7 @@ public class LoginServiceImpl implements LoginService {
         }
 
         //第四步：验证成功后立刻删除captchaKey 和 对应的 code，无法再做二次验证，保证安全
-        stringRedisTemplate.delete(loginVo.getCaptchaKey());
+        stringRedisTemplate.delete(redisKey);
 
         //第五步：验证码验证成功之后，接下来是验证 用户信息 是否存在，存在才能发给token，允许进入
         //先查用户名有没有（能根据用户名查到systemUser，至少说明这个 username 是存在的，至于是不是他的，还需要再继续查验密码）
@@ -164,7 +170,7 @@ public class LoginServiceImpl implements LoginService {
         // 根据查询条件，只给select的字段: id,user_name,password,status 所对应的成员变量赋值，其余成员变量的值=null
 
         if(systemUser == null){
-            throw new LeaseException(ResultCodeEnum.ADMIN_ACCOUNT_EXIST_ERROR);
+            throw new LeaseException(ResultCodeEnum.ADMIN_ACCOUNT_NOT_EXIST_ERROR);
         }
 
         //接下来验证密码
@@ -249,6 +255,55 @@ public class LoginServiceImpl implements LoginService {
         systemUserInfoVo.setAvatarUrl(systemUser.getAvatarUrl());
 
         return systemUserInfoVo; //返回用户信息 给浏览器显示
+    }
+
+    @Override
+    public String register(RegisterVo registerVo) {
+        if(registerVo == null || !StringUtils.hasText(registerVo.getUsername()) ||
+        !StringUtils.hasText(registerVo.getPassword())){
+            throw new LeaseException(ResultCodeEnum.PARAM_ERROR);
+        }
+
+        if(!StringUtils.hasText(registerVo.getCaptchaCode())){
+            throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_CODE_NOT_FOUND);
+        }
+
+        if(!StringUtils.hasText(registerVo.getCaptchaKey())){
+            throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_KEY_NOT_FOUND);
+        }
+
+        String redisKey = RedisConstant.ADMIN_LOGIN_PREFIX + registerVo.getCaptchaKey();
+        String captchaCode = stringRedisTemplate.opsForValue().get(redisKey);
+
+        if(!StringUtils.hasText(captchaCode)){
+            throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_CODE_EXPIRED);
+        }
+
+        if(!captchaCode.equalsIgnoreCase(registerVo.getCaptchaCode())){
+            throw new LeaseException(ResultCodeEnum.ADMIN_CAPTCHA_CODE_ERROR);
+        }
+
+        stringRedisTemplate.delete(redisKey);
+
+        if(!registerVo.getPassword().equals(registerVo.getPasswordAgain())){
+            throw new LeaseException(ResultCodeEnum.ADMIN_PASSWORD_NOT_MATCH);
+        }
+
+        SystemUser systemUser = new SystemUser();
+        systemUser.setUsername(registerVo.getUsername());
+        if(!systemUserService.isUsernameAvailabe(registerVo.getUsername())){
+            throw new LeaseException(ResultCodeEnum.ADMIN_ACCOUNT_EXIST_ERROR);
+        }
+
+        systemUser.setPassword(bCryptPasswordEncoder.encode(registerVo.getPassword()));
+        systemUser.setStatus(BaseStatus.ENABLE);
+        systemUser.setType(SystemUserType.ADMIN);
+        systemUserService.save(systemUser);
+
+        String token = jwtUtil.createToken(systemUser.getId(), systemUser.getUsername());
+
+        return token;
+
     }
 }
 

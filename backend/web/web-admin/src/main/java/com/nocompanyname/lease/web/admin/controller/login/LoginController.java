@@ -5,6 +5,7 @@ import com.nocompanyname.lease.common.result.Result;
 import com.nocompanyname.lease.web.admin.service.LoginService;
 import com.nocompanyname.lease.web.admin.vo.login.CaptchaVo;
 import com.nocompanyname.lease.web.admin.vo.login.LoginVo;
+import com.nocompanyname.lease.web.admin.vo.login.RegisterVo;
 import com.nocompanyname.lease.web.admin.vo.system.user.SystemUserInfoVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +25,13 @@ public class LoginController {
     public Result<CaptchaVo> getCaptcha() {
         CaptchaVo captchaVo = loginService.getCaptcha();
         return Result.ok(captchaVo);
+    }
+
+    @Operation(summary = "注册")
+    @PostMapping("register")
+    public Result<String> register(@RequestBody RegisterVo registerVo) {
+        String token = loginService.register(registerVo);
+        return Result.ok(token);
     }
 
     @Operation(summary = "登录")

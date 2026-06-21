@@ -137,7 +137,7 @@ const pullDownRefreshContainerRef =
 async function getRoomListHandler(pageInfo: ReqPage) {
   //   调用接口
   const { data } = await getRoomListByApartmentId({
-    id: route.query.id as string,
+    apartmentId: route.query.id as string,
     ...pageInfo
   });
   data.records.forEach(item => {

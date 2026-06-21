@@ -26,7 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/admin/**")
-                .excludePathPatterns("/admin/login", "/admin/login/captcha");
+                .excludePathPatterns("/admin/login", "/admin/login/captcha","/admin/register");
         /*
         登录和获取验证码时还没有 JWT，因此必须排除。
         /admin/info 没有被排除，所以会经过拦截器。
