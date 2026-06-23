@@ -1,6 +1,7 @@
 package com.nocompanyname.lease.web.app.vo.history;
 
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.nocompanyname.lease.model.entity.BrowsingHistory;
 import com.nocompanyname.lease.web.app.vo.graph.GraphVo;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,25 +14,14 @@ import java.util.List;
 @Schema(description = "浏览历史基本信息")
 public class HistoryItemVo extends BrowsingHistory {
 
-    @Schema(description = "房间号")
-    private String roomNumber;
-
-    @Schema(description = "租金")
-    private BigDecimal rent;
-
     @Schema(description = "房间图片列表")
     private List<GraphVo> roomGraphVoList;
 
-    @Schema(description = "公寓名称")
-    private String apartmentName;
+    @Schema(description = "房间当前是否可访问")
+    private Boolean available;
 
-    @Schema(description = "省份名称")
-    private String provinceName;
+    @Schema(description = "当前不可访问原因")
+    private String unavailableReason;
 
-    @Schema(description = "城市名称")
-    private String cityName;
-
-    @Schema(description = "区县名称")
-    private String districtName;
 
 }

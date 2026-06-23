@@ -4,28 +4,33 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nocompanyname.lease.web.app.mapper.BrowsingHistoryMapper">
 
-    <!--
-    当前展示的是房间、公寓的“当前信息”，不是浏览时的信息。
-    如果房间后来修改租金，历史列表会显示新租金；
-    物理删除后房间相关字段会是 null。这是你暂不做快照方案的预期限制。
-    -->
 
     <select id="getPage" resultMap="HistoryItemVoMap">
         SELECT bh.id   AS browsing_history_id,
-               bh.user_id,
                bh.room_id,
+               bh.user_id,
                bh.browse_time,
-               ri.room_number,
-               ri.rent,
-               ai.name AS apartment_name,
-               ai.district_name,
-               ai.city_name,
-               ai.province_name
+               bh.room_number_snapshot,
+               bh.rent_snapshot,
+               bh.apartment_name_snapshot,
+               bh.province_name_snapshot,
+               bh.city_name_snapshot,
+               bh.district_name_snapshot,
+               bh.cover_url_snapshot,
+               CASE
+                   WHEN ri.id IS NULL THEN 0 <!-- available 是 Boolean 类型，而 SQL 返回的是 0/1 -->
+                   WHEN ri.is_release = 0 THEN 0
+                   ELSE 1
+                   END AS available, <!--这里的 available 也可以不是表字段，它也是查询结果里的临时列名 -->
+               CASE
+                   WHEN ri.id IS NULL THEN '房间不存在或已删除'
+                   WHEN ri.is_release = 0 THEN '房间已下架'
+                   END AS unavailable_reason <!-- 有autoMapping = "true",因此 不用手动匹配 属性名unavailableReason 和 SQL查询结果的临时别名 unavailable_reason -->
+                   <!-- 虽然数据库表里没有 unavailable_reason 这个字段，但查询结果集里会有这一列。
+                   因为有一张虚拟的中间表。 -->
         FROM browsing_history bh
                  LEFT JOIN room_info ri
-                           ON bh.room_id = ri.id
-                 LEFT JOIN apartment_info ai
-                           ON ri.apartment_id = ai.id
+                           ON bh.room_id = ri.id AND ri.is_deleted = 0
         WHERE bh.is_deleted = 0
           AND bh.user_id = #{userId}
         ORDER BY bh.browse_time DESC, bh.id DESC
@@ -36,12 +41,10 @@
 
          而且就算写，你也应该把ri.is_release = 1写在 ON 后面，而不是WHERE后面，WHERE是针对拼接表的，会整体过滤掉一整行数据。
          -->
-
     </select>
 
     <resultMap id="HistoryItemVoMap" type="com.nocompanyname.lease.web.app.vo.history.HistoryItemVo" autoMapping="true">
         <id property="id" column="browsing_history_id"/>
-        <result property="apartmentName" column="apartment_name"/>
         <collection property="roomGraphVoList" ofType="com.nocompanyname.lease.web.app.vo.graph.GraphVo" select="selectGraphVoByRoomId" column="room_id"/>
     </resultMap>
 

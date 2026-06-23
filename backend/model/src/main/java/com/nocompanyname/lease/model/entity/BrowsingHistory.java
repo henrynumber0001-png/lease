@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -21,6 +22,27 @@ import java.util.Date;
 public class BrowsingHistory extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
+
+    @TableField("room_number_snapshot")
+    private String roomNumberSnapshot;
+
+    @TableField("rent_snapshot")
+    private BigDecimal rentSnapshot;
+
+    @TableField("apartment_name_snapshot")
+    private String apartmentNameSnapshot;
+
+    @TableField("province_name_snapshot")
+    private String provinceNameSnapshot;
+
+    @TableField("city_name_snapshot")
+    private String cityNameSnapshot;
+
+    @TableField("district_name_snapshot")
+    private String districtNameSnapshot;
+
+    @TableField("cover_url_snapshot")
+    private String coverUrlSnapshot;
 
     @Schema(description = "用户id")
     @TableField("user_id")
