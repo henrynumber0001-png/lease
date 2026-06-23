@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class LeaseException extends RuntimeException {
 
-    private ResultCodeEnum resultCodeEnum;
+    private final ResultCodeEnum resultCodeEnum;
 
     public LeaseException(ResultCodeEnum resultCodeEnum) {//用于捕获 可预测的 业务层面的异常，主动创建并抛出一个 LeaseException，没有底层异常 cause，异常就是message信息
         super(resultCodeEnum.getMessage());
